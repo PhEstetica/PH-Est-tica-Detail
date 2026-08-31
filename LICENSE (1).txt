@@ -1,0 +1,24 @@
+PH ESTÉTICA & DETAIL — LICENÇA PROPRIETÁRIA
+
+© 2026 PH ESTÉTICA & DETAIL. Todos os direitos reservados.
+
+Este software, incluindo seu código-fonte, estrutura, interface, banco de dados, documentação, arquivos, recursos visuais, funcionalidades e demais componentes, é de propriedade exclusiva da PH ESTÉTICA & DETAIL.
+
+É expressamente proibido, sem autorização prévia e por escrito do proprietário:
+
+- copiar, reproduzir ou duplicar este software, total ou parcialmente;
+- modificar, adaptar, traduzir ou criar obras derivadas;
+- distribuir, publicar, compartilhar, sublicenciar ou disponibilizar o código-fonte;
+- vender, revender, alugar, ceder ou explorar comercialmente este software;
+- utilizar partes do código, interface, estrutura ou funcionalidades em outros projetos;
+- remover, alterar ou ocultar avisos de autoria, propriedade intelectual ou direitos autorais;
+- realizar engenharia reversa, descompilação ou tentativa de obtenção de partes protegidas do sistema, salvo quando estritamente permitido por lei aplicável.
+
+O acesso ao código-fonte ou ao repositório não concede qualquer licença de uso, cópia, modificação, distribuição ou exploração comercial.
+
+Qualquer utilização não autorizada poderá resultar nas medidas legais cabíveis.
+
+Para solicitar autorização de uso, modificação ou distribuição, entre em contato com o proprietário da PH ESTÉTICA & DETAIL.
+
+PH ESTÉTICA & DETAIL
+Todos os direitos reservados.
