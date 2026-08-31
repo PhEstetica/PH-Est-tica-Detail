@@ -1,0 +1,65 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head"><div><span>CATÁLOGO</span><h1>Serviços e preços</h1><p>Os serviços principais e os adicionais ficam separados por categoria. Moto e carro podem ter listas diferentes.</p></div></div>
+{% if request.query_params.get('extra_created') %}<div class="notice gold-notice">Adicional criado com sucesso.</div>{% endif %}
+{% if request.query_params.get('extra_deleted') %}<div class="notice gold-notice">Adicional excluído.</div>{% endif %}
+{% if request.query_params.get('extra_disabled') %}<div class="notice gold-notice">Esse adicional já possui histórico. Ele foi desativado para novos agendamentos, sem apagar os atendimentos antigos.</div>{% endif %}
+{% if request.query_params.get('saved') %}<div class="notice gold-notice">Alterações salvas.</div>{% endif %}
+
+<div class="admin-section"><h2>Serviços principais</h2><div class="stack">
+{% for s in services %}
+<form class="card service-edit" method="post" action="/admin/servicos/{{s.id}}">
+  <div><span class="pill">{% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %}</span><label>Nome<input name="name" value="{{s.name}}"></label></div>
+  <label>Descrição<textarea name="description">{{s.description}}</textarea></label>
+  <label>Preço<input name="price" type="number" step="0.01" value="{{s.price}}"></label>
+  <label>Duração (min)<input name="duration_minutes" type="number" min="1" value="{{s.duration_minutes or ''}}" placeholder="A definir"></label>
+  <label class="check inline"><input type="checkbox" name="active" value="1" {% if s.active %}checked{% endif %}><span>Ativo</span></label>
+  <button class="btn gold">Salvar</button>
+</form>
+{% endfor %}
+</div></div>
+
+<div class="admin-section">
+  <div class="admin-head" style="margin-bottom:18px"><div><h2>Adicionais</h2><p>Cadastre extras específicos para moto, para todos os carros ou para um porte de carro.</p></div></div>
+  <form class="card form-stack" method="post" action="/admin/servicos/adicional/novo">
+    <h3>+ Novo adicional</h3>
+    <div class="form-grid">
+      <label>Nome<input name="name" required placeholder="Ex.: Proteção de tanque"></label>
+      <label>Preço<input name="price" inputmode="decimal" placeholder="A definir"></label>
+      <label>Disponível para
+        <select name="category_code" required>
+          <option value="moto">Moto</option>
+          <option value="car">Todos os carros</option>
+          <option value="car_small">Carro pequeno/médio</option>
+          <option value="car_large">Carro grande</option>
+          <option value="all">Carro e moto</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn gold" type="submit">Adicionar</button>
+  </form>
+
+  <div class="stack" style="margin-top:18px">
+  {% for e in extras %}
+  <form class="card extras-edit" method="post" action="/admin/extras/{{e.id}}">
+    <label>Nome<input name="name" value="{{e.name}}" required></label>
+    <label>Preço<input name="price" value="{{e.price if e.price is not none else ''}}" placeholder="A definir"></label>
+    <label>Disponível para
+      <select name="category_code">
+        <option value="all" {% if not e.category_code %}selected{% endif %}>Carro e moto</option>
+        <option value="moto" {% if e.category_code=='moto' %}selected{% endif %}>Moto</option>
+        <option value="car" {% if e.category_code=='car' %}selected{% endif %}>Todos os carros</option>
+        <option value="car_small" {% if e.category_code=='car_small' %}selected{% endif %}>Carro pequeno/médio</option>
+        <option value="car_large" {% if e.category_code=='car_large' %}selected{% endif %}>Carro grande</option>
+      </select>
+    </label>
+    <label class="check inline"><input type="checkbox" name="active" value="1" {% if e.active %}checked{% endif %}><span>Ativo</span></label>
+    <div class="actions" style="margin-top:0">
+      <button class="btn ghost" type="submit">Salvar</button>
+      <button class="btn danger" type="submit" formaction="/admin/extras/{{e.id}}/excluir" formmethod="post" onclick="return confirm('Remover este adicional? Se ele já foi usado em atendimentos antigos, será apenas desativado para preservar o histórico.');">Remover</button>
+    </div>
+  </form>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

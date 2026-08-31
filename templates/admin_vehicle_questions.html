@@ -1,0 +1,49 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head"><div><span>AGENDAMENTO</span><h1>Perguntas sobre o veículo</h1><p>Edite o que aparece na etapa “Como seu veículo está hoje?”. Você pode usar perguntas diferentes para moto e carro.</p></div></div>
+{% if request.query_params.get('created') %}<div class="notice gold-notice">Pergunta/condição criada.</div>{% endif %}
+{% if request.query_params.get('saved') %}<div class="notice gold-notice">Alterações salvas.</div>{% endif %}
+{% if request.query_params.get('deleted') %}<div class="notice gold-notice">Pergunta/condição removida.</div>{% endif %}
+
+<section class="admin-section">
+  <h2>+ Nova pergunta/condição</h2>
+  <form class="card form-stack" method="post" action="/admin/perguntas-veiculo/nova">
+    <div class="form-grid">
+      <label>Texto<input name="label" required placeholder="Ex.: Motor com muita sujeira"></label>
+      <label>Mostrar para
+        <select name="category_code">
+          <option value="all">Carro e moto</option>
+          <option value="moto">Moto</option>
+          <option value="car">Todos os carros</option>
+          <option value="car_small">Carro pequeno/médio</option>
+          <option value="car_large">Carro grande</option>
+        </select>
+      </label>
+      <label>Peso no nível de sujeira
+        <select name="weight"><option value="1">Normal</option><option value="2">Forte</option></select>
+      </label>
+    </div>
+    <button class="btn gold">Adicionar pergunta</button>
+  </form>
+</section>
+
+<section class="admin-section"><h2>Perguntas atuais</h2><div class="stack">
+{% for q in questions %}
+<form class="card extras-edit" method="post" action="/admin/perguntas-veiculo/{{q.id}}">
+  <label>Texto<input name="label" value="{{q.label}}" required></label>
+  <label>Mostrar para
+    <select name="category_code">
+      <option value="all" {% if not q.category_code %}selected{% endif %}>Carro e moto</option>
+      <option value="moto" {% if q.category_code=='moto' %}selected{% endif %}>Moto</option>
+      <option value="car" {% if q.category_code=='car' %}selected{% endif %}>Todos os carros</option>
+      <option value="car_small" {% if q.category_code=='car_small' %}selected{% endif %}>Carro pequeno/médio</option>
+      <option value="car_large" {% if q.category_code=='car_large' %}selected{% endif %}>Carro grande</option>
+    </select>
+  </label>
+  <label>Peso<select name="weight"><option value="1" {% if q.weight==1 %}selected{% endif %}>Normal</option><option value="2" {% if q.weight>=2 %}selected{% endif %}>Forte</option></select></label>
+  <label class="check inline"><input type="checkbox" name="active" value="1" {% if q.active %}checked{% endif %}><span>Ativa</span></label>
+  <div class="actions" style="margin-top:0"><button class="btn ghost">Salvar</button><button class="btn danger" type="submit" formaction="/admin/perguntas-veiculo/{{q.id}}/excluir" onclick="return confirm('Remover esta pergunta/condição? Os atendimentos antigos continuarão com a informação salva.');">Remover</button></div>
+</form>
+{% endfor %}
+</div></section>
+{% endblock %}

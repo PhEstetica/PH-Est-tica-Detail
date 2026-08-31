@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Agendar — PH ESTÉTICA & DETAIL{% endblock %}
+{% block content %}
+<section class="shell booking-wrap">
+  <div class="section-head"><span>AGENDAMENTO</span><h1>Qual veículo vamos cuidar?</h1><p>Fluxo rápido, por etapas. Nada de formulário gigante.</p></div>
+  <div class="progress"><div id="progressBar"></div></div><div id="stepLabel" class="step-label">Etapa 1 de 11</div>
+  <div id="bookingMiniSummary" class="booking-mini-summary" hidden></div>
+  <form id="bookingForm" action="/agendar" method="post" enctype="multipart/form-data" class="wizard-card">
+    <input type="hidden" name="category" id="category"><input type="hidden" name="vehicle_type" id="vehicleType"><input type="hidden" name="saved_vehicle_id" id="savedVehicleId">
+    <input type="hidden" name="service_id" id="serviceId"><input type="hidden" name="extras" id="extrasInput">
+    <input type="hidden" name="condition_flags" id="conditionFlags"><input type="hidden" name="dirt_level" id="dirtLevel" value="1">
+
+    <section class="wizard-step active" data-step="1"><h2>Qual veículo vamos cuidar?</h2><div class="choice-grid"><button type="button" class="choice big" data-vehicle="car">🚗<strong>CARRO</strong></button><button type="button" class="choice big" data-vehicle="moto">🏍️<strong>MOTO</strong></button></div></section>
+    <section class="wizard-step" data-step="2"><h2>Qual o porte do seu veículo?</h2><div class="choice-grid"><button type="button" class="choice" data-category="car_small"><strong>CARRO PEQUENO / MÉDIO</strong><span>Hatch, sedan, compacto, sedan médio</span></button><button type="button" class="choice" data-category="car_large"><strong>CARRO GRANDE</strong><span>SUV, picape, utilitário grande</span></button></div></section>
+    <section class="wizard-step" data-step="3"><h2>Dados do veículo</h2><p class="muted">Comece a digitar a marca e o modelo. O sistema mostra as opções para você selecionar.</p>{% if saved %}<div class="saved-vehicles"><label>Veículos da sua garagem</label><div class="mini-list">{% for v in saved %}<button type="button" class="savedVehicle" data-json='{{ dict(v)|tojson }}'>{{v.brand}} {{v.model}} · {{v.year}}</button>{% endfor %}</div></div>{% endif %}<div class="form-grid vehicle-catalog-form"><label>Marca<div class="autocomplete-field"><input type="search" id="brandSearch" autocomplete="off" placeholder="Ex.: Chev, Volks, Honda..."><input type="hidden" name="brand" id="brand"><input type="hidden" name="brand_catalog_id" id="brandCatalogId"><div id="brandSuggestions" class="autocomplete-menu"></div></div><small id="brandHelp">Digite parte da marca e selecione na lista.</small></label><label>Modelo<div class="autocomplete-field"><input type="search" id="modelSearch" autocomplete="off" placeholder="Ex.: Onix, Voyage, Biz..." disabled><input type="hidden" name="model" id="model"><input type="hidden" name="model_catalog_id" id="modelCatalogId"><div id="modelSuggestions" class="autocomplete-menu"></div></div><small id="modelHelp">Primeiro selecione a marca.</small></label><label>Ano<input name="year" id="year" inputmode="numeric"></label><label>Cor<input name="color" id="color"></label><label id="engineField">Cilindrada (opcional)<input name="engine_cc" id="engineCc"></label><label>Placa (opcional)<input name="plate" id="plate"></label><button type="button" id="manualVehicleToggle" class="btn text full">Não encontrou seu veículo? Digitar manualmente</button><div id="vehicleCatalogStatus" class="notice full"></div></div></section>
+    <section class="wizard-step" data-step="4"><h2>Escolha o cuidado</h2><div id="servicesGrid" class="grid-3"></div><div id="serviceWarning" class="notice"></div></section>
+    <section class="wizard-step" data-step="5"><h2>Quer adicionar algum cuidado extra?</h2><div id="extrasGrid" class="check-grid"></div><div class="summary-strip"><span>Total estimado</span><strong id="liveTotal">R$ 0,00</strong><small id="pendingPrices"></small></div></section>
+    <section class="wizard-step" data-step="6"><h2>Como seu veículo está hoje?</h2><p class="muted">As opções mudam conforme carro ou moto e podem ser editadas no painel administrativo.</p><div id="conditions" class="check-grid"></div><label>Conte pra gente em poucas palavras<textarea name="condition_text" maxlength="300" placeholder="Ex.: Peguei estrada de terra essa semana e o interior está com bastante poeira."></textarea></label><div class="dirt-meter"><span>NÍVEL DE SUJEIRA</span><strong id="dirtLabel">1 — LEVE</strong></div><div id="recommendation" class="notice gold-notice"></div></section>
+    <section class="wizard-step" data-step="7"><h2>Quer mostrar como seu veículo está?</h2><p>Envio opcional de até 5 fotos.</p><label class="upload-box">Selecionar fotos<input type="file" name="photos" id="photos" accept="image/*" multiple></label><div id="photoInfo"></div><label class="check inline"><input type="checkbox" name="social_authorized" value="1"><span>Autorizo separadamente o uso das fotos do meu veículo nas redes sociais da PH ESTÉTICA & DETAIL.</span></label></section>
+    <section class="wizard-step" data-step="8">
+      <h2>Escolha a data</h2>
+      <p class="muted">Toque no campo abaixo e escolha no calendário. Dias sem expediente ou sem vagas ficam indisponíveis.</p>
+      <input type="hidden" name="appointment_date" id="appointmentDate" required>
+      <div class="date-picker-wrap">
+        <button type="button" id="datePickerButton" class="date-picker-trigger" aria-expanded="false">
+          <span class="date-picker-icon">▦</span>
+          <span><small>DATA DO AGENDAMENTO</small><strong id="selectedDateLabel">Selecionar data</strong></span>
+          <span class="date-picker-arrow">⌄</span>
+        </button>
+        <div id="calendarPopover" class="calendar-popover" hidden>
+          <div class="calendar-head">
+            <button type="button" id="calendarPrev" class="calendar-nav" aria-label="Mês anterior">‹</button>
+            <strong id="calendarMonthLabel"></strong>
+            <button type="button" id="calendarNext" class="calendar-nav" aria-label="Próximo mês">›</button>
+          </div>
+          <div class="calendar-weekdays"><span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span></div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+          <div class="calendar-legend"><span><i class="available"></i>Disponível</span><span><i class="unavailable"></i>Indisponível</span></div>
+          <div id="calendarMessage" class="calendar-message"></div>
+        </div>
+      </div>
+      <div class="trust-note">✓ Somente datas com horários realmente disponíveis podem ser selecionadas.</div>
+    </section>
+    <section class="wizard-step" data-step="9" id="agenda"><h2>Escolha o horário</h2><p class="muted">Os horários abaixo consideram a duração do serviço e os atendimentos já agendados.</p><div id="slots" class="slot-grid"></div><input type="hidden" name="appointment_time" id="appointmentTime"><div id="slotMessage" class="notice"></div><div class="trust-note">✓ Seu horário é reservado somente após a confirmação final.</div></section>
+    <section class="wizard-step" data-step="10"><h2>Confira seu agendamento</h2><div id="bookingSummary" class="review-card"></div><div class="form-grid"><label>Seu nome<input name="customer_name" id="customerName" value="{{ customer.name if customer else '' }}" required></label><label>WhatsApp<input name="phone" id="phone" value="{{ customer.phone if customer else '' }}" required placeholder="(38) 99999-9999"></label></div><h3 style="margin-top:24px">Como pretende pagar?</h3><div class="choice-grid payment-grid">{% for pm in payment_methods %}<label class="check payment-choice"><input type="radio" name="payment_method" value="{{pm.code}}" data-label="{{pm.name}}" required><span><b>{{pm.name|upper}}</b></span></label>{% else %}<div class="notice">Nenhuma forma de pagamento está ativa. Entre em contato pelo WhatsApp.</div>{% endfor %}</div></section>
+    <section class="wizard-step" data-step="11"><h2>Confirmar reserva</h2><p>Ao confirmar, o agendamento será salvo e o horário deixará de ficar disponível conforme a capacidade configurada.</p><div id="finalSummary" class="review-card"></div><button class="btn gold wide" type="submit">CONFIRMAR AGENDAMENTO</button></section>
+
+    <div class="wizard-actions"><button type="button" id="prevBtn" class="btn ghost">Voltar</button><button type="button" id="nextBtn" class="btn gold">Continuar</button></div>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}<script>window.BOOKING_PREFILL={{prefill|tojson}};</script><script src="/static/vehicle_catalog.js"></script><script src="/static/booking.js"></script>{% endblock %}

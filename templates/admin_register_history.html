@@ -1,0 +1,187 @@
+{% extends 'admin_base.html' %}
+{% block title %}Registrar atendimento realizado — PH ESTÉTICA & DETAIL{% endblock %}
+{% block content %}
+<div class="admin-head">
+  <div>
+    <span>HISTÓRICO</span>
+    <h1>Registrar atendimento já realizado</h1>
+    <p>Use esta tela para lançar uma lavagem que aconteceu antes do cadastro no sistema. O registro entra como FINALIZADO e não ocupa a agenda atual.</p>
+  </div>
+  <a class="btn ghost" href="/admin/agendamentos">Voltar aos agendamentos</a>
+</div>
+
+<form method="post" action="/admin/agendamentos/registrar" class="admin-section form-stack" id="historyForm">
+  <h2>1. Cliente e veículo</h2>
+  <label>Usar um veículo já cadastrado (opcional)
+    <select name="existing_vehicle_id" id="existingVehicle">
+      <option value="">Cadastrar/informar abaixo</option>
+      {% for v in vehicles %}
+      <option value="{{v.id}}"
+        data-name="{{v.customer_name}}" data-phone="{{v.customer_phone}}" data-category="{{v.category_code}}"
+        data-brand="{{v.brand}}" data-model="{{v.model}}" data-brand-id="{{v.brand_catalog_id or ''}}" data-model-id="{{v.model_catalog_id or ''}}" data-year="{{v.year or ''}}" data-color="{{v.color or ''}}" data-plate="{{v.plate or ''}}">
+        {{v.customer_name}} — {{v.brand}} {{v.model}}{% if v.plate %} · {{v.plate}}{% endif %}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+  <div class="form-grid">
+    <label>Nome do cliente<input name="customer_name" id="customerName" placeholder="Ex.: João da Silva"></label>
+    <label>WhatsApp<input name="phone" id="customerPhone" placeholder="(38) 99999-9999"></label>
+    <label>Categoria
+      <select name="category" id="category">
+        <option value="">Selecione</option>
+        <option value="moto">Moto</option>
+        <option value="car_small">Carro pequeno/médio</option>
+        <option value="car_large">Carro grande</option>
+      </select>
+    </label>
+    <label>Marca
+      <div class="autocomplete-field">
+        <input type="search" id="brandSearch" autocomplete="off" placeholder="Ex.: Chev, Volks, Honda...">
+        <input type="hidden" name="brand" id="brand">
+        <input type="hidden" name="brand_catalog_id" id="brandCatalogId">
+        <div id="brandSuggestions" class="autocomplete-menu"></div>
+      </div>
+      <small id="brandHelp">Escolha a categoria e comece a digitar a marca.</small>
+    </label>
+    <label>Modelo
+      <div class="autocomplete-field">
+        <input type="search" id="modelSearch" autocomplete="off" placeholder="Ex.: Celta, Onix, Biz..." disabled>
+        <input type="hidden" name="model" id="model">
+        <input type="hidden" name="model_catalog_id" id="modelCatalogId">
+        <div id="modelSuggestions" class="autocomplete-menu"></div>
+      </div>
+      <small id="modelHelp">Primeiro selecione a marca.</small>
+    </label>
+    <label>Ano<input name="year" id="year" placeholder="2014"></label>
+    <label>Cor<input name="color" id="color"></label>
+    <label>Placa<input name="plate" id="plate"></label>
+  </div>
+  <button type="button" id="manualVehicleToggle" class="btn text">Não encontrou o veículo? Digitar marca e modelo manualmente</button>
+  <div id="vehicleCatalogStatus" class="notice"></div>
+  <div class="notice">Se o veículo já estiver cadastrado, selecione-o acima para evitar duplicidade. Para um veículo novo, escolha a categoria e pesquise a marca e o modelo no catálogo.</div>
+
+  <h2>2. Serviço realizado</h2>
+  <div class="form-grid">
+    <label>Serviço
+      <select name="service_id" id="serviceId" required>
+        <option value="">Selecione o serviço</option>
+        {% for s in services %}
+        <option value="{{s.id}}" data-category="{{s.category_code}}" data-price="{{s.price}}">
+          {% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %} — {{s.name}} — {{brl(s.price)}}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Valor cobrado (opcional)
+      <input name="amount_paid" inputmode="decimal" placeholder="Ex.: 70,00">
+      <small>Se ficar vazio, o sistema usa o preço cadastrado do serviço + adicionais com preço definido.</small>
+    </label>
+    <label>Forma de pagamento
+      <select name="payment_method" required>
+        <option value="">Selecione</option>
+        {% for pm in payment_methods %}<option value="{{pm.code}}">{{pm.name}}</option>{% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <label>Adicionais realizados (opcional)</label>
+  <div class="check-grid">
+    {% for e in extras %}
+    <label class="check history-extra-wrap" data-category="{{e.category_code or 'all'}}"><input class="history-extra" type="checkbox" value="{{e.id}}"> <span>{{e.name}}{% if e.price is not none %} · {{brl(e.price)}}{% endif %}</span></label>
+    {% endfor %}
+  </div>
+  <input type="hidden" name="extras" id="extrasValue" value="">
+
+  <h2>3. Quando aconteceu</h2>
+  <div class="form-grid">
+    <label>Data<input type="date" name="appointment_date" max="{{today}}" required></label>
+    <label>Horário<input type="time" name="appointment_time" required></label>
+  </div>
+  <label>Observações (opcional)<textarea name="condition_text" maxlength="300" placeholder="Ex.: veículo chegou com muita poeira; lavagem realizada normalmente."></textarea></label>
+  <label class="check inline"><input type="checkbox" name="count_loyalty" value="1"> <span>Somar este atendimento como 1 cuidado no Clube PH</span></label>
+  <div class="notice gold-notice"><b>Importante:</b> o atendimento será salvo como <b>FINALIZADO</b>. Se você lançar algo errado, poderá excluir o registro pela tela de agendamentos ou pelos detalhes do atendimento.</div>
+
+  <div class="actions">
+    <button class="btn gold" type="submit">Registrar atendimento realizado</button>
+    <a class="btn ghost" href="/admin/agendamentos">Cancelar</a>
+  </div>
+</form>
+
+<script src="/static/vehicle_catalog.js"></script>
+<script>
+(function(){
+  const vehicle = document.getElementById('existingVehicle');
+  const category = document.getElementById('category');
+  const service = document.getElementById('serviceId');
+  const fields = {
+    customerName: document.getElementById('customerName'), customerPhone: document.getElementById('customerPhone'),
+    brand: document.getElementById('brand'), model: document.getElementById('model'), brandSearch: document.getElementById('brandSearch'),
+    modelSearch: document.getElementById('modelSearch'), brandId: document.getElementById('brandCatalogId'), modelId: document.getElementById('modelCatalogId'),
+    year: document.getElementById('year'), color: document.getElementById('color'), plate: document.getElementById('plate')
+  };
+  const catalog = window.PHVehicleCatalog?.attach({
+    vehicleType:'car', brandSearch:'brandSearch', brandValue:'brand', brandId:'brandCatalogId', brandMenu:'brandSuggestions', brandHelp:'brandHelp',
+    modelSearch:'modelSearch', modelValue:'model', modelId:'modelCatalogId', modelMenu:'modelSuggestions', modelHelp:'modelHelp',
+    manualToggle:'manualVehicleToggle', status:'vehicleCatalogStatus',
+    onModelSelected:item=>{
+      const current=category.value;
+      if(current!=='moto' && item.suggested_category && item.suggested_category!==current){
+        document.getElementById('vehicleCatalogStatus').textContent=`Referência do catálogo: este modelo costuma ser ${item.suggested_category==='car_large'?'carro grande':'carro pequeno/médio'}. Confira a categoria antes de registrar.`;
+      }
+    }
+  });
+  function catalogType(){ return category.value==='moto' ? 'moto' : 'car'; }
+  function scopeMatches(scope, cat){
+    if(!scope || scope==='all') return true;
+    if(scope===cat) return true;
+    return scope==='car' && (cat==='car_small' || cat==='car_large');
+  }
+  function filterServices(){
+    const cat = category.value;
+    [...service.options].forEach((opt, i) => {
+      if(i===0) return;
+      opt.disabled = !!cat && opt.dataset.category !== cat;
+      opt.hidden = !!cat && opt.dataset.category !== cat;
+    });
+    if(service.selectedOptions[0] && service.selectedOptions[0].disabled) service.value='';
+    document.querySelectorAll('.history-extra-wrap').forEach(wrap => {
+      const visible = !cat || scopeMatches(wrap.dataset.category, cat);
+      wrap.style.display = visible ? '' : 'none';
+      if(!visible) wrap.querySelector('input').checked = false;
+    });
+  }
+  vehicle.addEventListener('change', () => {
+    const opt = vehicle.selectedOptions[0];
+    if(!opt || !opt.value) return;
+    fields.customerName.value = opt.dataset.name || '';
+    fields.customerPhone.value = opt.dataset.phone || '';
+    fields.brand.value = opt.dataset.brand || '';
+    fields.model.value = opt.dataset.model || '';
+    fields.brandSearch.value = opt.dataset.brand || '';
+    fields.modelSearch.value = opt.dataset.model || '';
+    fields.brandId.value = opt.dataset.brandId || '';
+    fields.modelId.value = opt.dataset.modelId || '';
+    fields.year.value = opt.dataset.year || '';
+    fields.color.value = opt.dataset.color || '';
+    fields.plate.value = opt.dataset.plate || '';
+    category.value = opt.dataset.category || '';
+    catalog?.setVehicleType(catalogType());
+    catalog?.setSaved({vehicle_type:catalogType(),brand:opt.dataset.brand||'',model:opt.dataset.model||'',brand_catalog_id:opt.dataset.brandId||'',model_catalog_id:opt.dataset.modelId||''});
+    filterServices();
+  });
+  category.addEventListener('change', () => {
+    filterServices();
+    catalog?.setVehicleType(catalogType());
+  });
+  filterServices();
+  document.getElementById('historyForm').addEventListener('submit', (e) => {
+    document.getElementById('extrasValue').value = [...document.querySelectorAll('.history-extra:checked')].map(x=>x.value).join(',');
+    if(!vehicle.value){
+      const check=catalog?.validate?.();
+      if(check && !check.ok){ e.preventDefault(); alert(check.message); }
+    }
+  });
+})();
+</script>
+{% endblock %}
