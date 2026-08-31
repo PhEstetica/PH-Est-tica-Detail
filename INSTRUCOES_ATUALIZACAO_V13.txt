@@ -1,0 +1,10 @@
+ATUALIZAÇÃO V13
+
+1. Pare o servidor com CTRL + C.
+2. Faça backup do ph_estetica.db.
+3. Copie os arquivos desta atualização por cima da instalação atual.
+4. NÃO substitua nem apague o seu ph_estetica.db.
+5. Inicie: python -m uvicorn app:app --reload
+6. Pressione CTRL + F5 no navegador.
+
+Novidade: Registrar atendimento já realizado agora possui pesquisa/autocomplete de marca e modelo usando o catálogo de veículos já existente.

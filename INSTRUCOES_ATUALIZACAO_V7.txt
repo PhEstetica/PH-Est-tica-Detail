@@ -1,0 +1,19 @@
+ATUALIZAÇÃO V7 — AGENDAMENTO MAIS PROFISSIONAL
+
+1. No CMD, pressione CTRL + C para parar o site.
+2. Faça uma cópia do arquivo ph_estetica.db.
+3. Extraia a atualização V7.
+4. Copie os arquivos por cima da sua instalação atual.
+5. NÃO apague nem substitua o ph_estetica.db.
+6. Inicie novamente:
+   python -m uvicorn app:app --reload
+
+PRINCIPAIS MUDANÇAS
+- textos dos serviços com contraste corrigido;
+- calendário pop-up com disponibilidade real;
+- datas sem vaga/fechadas bloqueadas;
+- cards de serviço mais claros e profissionais;
+- destaque de seleção;
+- horários redesenhados;
+- resumo compacto do agendamento;
+- botão Continuar com estado habilitado/desabilitado.

@@ -1,0 +1,21 @@
+PH ESTÉTICA & DETAIL — ATUALIZAÇÃO V5
+
+PARA NÃO PERDER A AGENDA, CLIENTES E CONFIGURAÇÕES:
+
+1. No CMD onde o site está rodando, pressione CTRL + C.
+2. Localize o arquivo ph_estetica.db na sua pasta atual.
+3. Faça uma cópia dele antes de atualizar.
+4. Extraia o ZIP V5.
+5. Copie os arquivos da V5 por cima da pasta atual.
+6. NÃO substitua e NÃO apague o seu ph_estetica.db.
+7. Abra o CMD na pasta do site.
+8. Rode:
+   python -m uvicorn app:app --reload
+
+A V5 atualiza o banco automaticamente na primeira inicialização.
+
+PRIMEIROS AJUSTES RECOMENDADOS:
+- Painel > Financeiro: deixe PIX/Dinheiro ativos e Cartão desativado enquanto não tiver maquininha.
+- Painel > Configurações: confira WhatsApp, textos da home e prazos de cancelar/remarcar.
+- Painel > Galeria: adicione fotos reais de trabalhos quando tiver autorização de uso.
+- Painel > Financeiro: marque cada atendimento como Pago quando receber.

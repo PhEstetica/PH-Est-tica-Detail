@@ -1,0 +1,11 @@
+ATUALIZAÇÃO V10 — MENSAGENS EDITÁVEIS DO WHATSAPP
+
+1. Pare o servidor com CTRL + C.
+2. Faça backup do arquivo ph_estetica.db.
+3. Copie os arquivos da V10 por cima da pasta atual.
+4. NÃO apague nem substitua o seu ph_estetica.db.
+5. Inicie: python -m uvicorn app:app --reload
+6. No navegador, pressione CTRL + F5.
+7. Entre em Admin > Configurações > Mensagens do WhatsApp.
+
+A atualização não apaga agenda, clientes, catálogo ou histórico.

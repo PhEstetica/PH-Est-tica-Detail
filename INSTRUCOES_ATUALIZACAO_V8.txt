@@ -1,0 +1,18 @@
+ATUALIZAÇÃO V8 — HOME COM FOTOS ILUSTRATIVAS E IMAGENS EDITÁVEIS
+
+1. Pare o servidor com CTRL + C.
+2. Faça backup do arquivo ph_estetica.db.
+3. Copie os arquivos da atualização V8 por cima da pasta atual.
+4. NÃO apague nem substitua o seu ph_estetica.db.
+5. Inicie novamente com:
+   python -m uvicorn app:app --reload
+
+NOVIDADES
+- banner principal com fotografia ilustrativa de estética automotiva;
+- seções fotográficas para carros e motos;
+- seção de detalhes automotivos;
+- galeria ilustrativa temporária quando ainda não existem fotos reais cadastradas;
+- ao cadastrar uma foto real ativa em Admin > Galeria, a vitrine ilustrativa da galeria é substituída automaticamente;
+- todas as imagens principais podem ser trocadas em Admin > Configurações;
+- botão para restaurar as imagens genéricas;
+- as imagens genéricas são marcadas como ilustrativas para não fingir que são trabalhos da PH.

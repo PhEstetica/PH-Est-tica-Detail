@@ -1,0 +1,13 @@
+ATUALIZAÇÃO V11 — COBRANÇA DE PAGAMENTO
+
+1. Pare o site com CTRL + C.
+2. Faça uma cópia do arquivo ph_estetica.db.
+3. Copie os arquivos da V11 por cima da instalação atual.
+4. NÃO substitua nem apague o seu ph_estetica.db.
+5. Inicie com: python -m uvicorn app:app --reload
+6. No navegador use CTRL + F5.
+
+Onde usar:
+- Admin > Financeiro > Pagamentos pendentes > Cobrar no WhatsApp
+- Admin > Agendamento > Financeiro do atendimento > Cobrar no WhatsApp
+- Admin > Configurações > Mensagens do WhatsApp > Cobrança / lembrete de pagamento pendente

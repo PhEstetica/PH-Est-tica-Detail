@@ -1,0 +1,15 @@
+V13 CONSOLIDADA — CALENDÁRIO POP-UP NO FINANCEIRO
+
+1. Pare o site com CTRL + C.
+2. Faça backup do ph_estetica.db.
+3. Copie os arquivos desta atualização por cima da V13 atual.
+4. NÃO apague nem substitua ph_estetica.db.
+5. Inicie novamente:
+   python -m uvicorn app:app --reload
+6. No navegador, pressione CTRL + F5.
+
+NOVO:
+- todos os campos de data do Financeiro abrem o calendário ao clicar;
+- filtros de período também usam o calendário;
+- campos de competência (mês/ano) usam seletor de mês;
+- nenhuma regra financeira da V12/V13 foi alterada.

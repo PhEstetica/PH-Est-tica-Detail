@@ -1,0 +1,27 @@
+ATUALIZAÇÃO V6 — CATÁLOGO DE MARCAS E MODELOS
+
+1. Pare o site com CTRL + C.
+2. Faça uma cópia do arquivo ph_estetica.db.
+3. Copie os arquivos da V6 por cima da pasta atual.
+4. NÃO apague nem substitua o seu ph_estetica.db.
+5. Inicie o site novamente:
+   python -m uvicorn app:app --reload
+
+O QUE MUDA
+- O cliente começa a digitar a marca e recebe sugestões.
+- Depois de selecionar a marca, digita parte do modelo e recebe sugestões.
+- Ex.: "chev" -> Chevrolet; "oni" -> Onix / Onix Plus.
+- Ex.: "hon" -> Honda; "cb 5" -> CB 500F / CB 500X, quando disponíveis.
+- Existe opção "Não encontrou seu veículo? Digitar manualmente".
+- Marcas e modelos ficam salvos no banco de dados local.
+- O painel ganha a área "Marcas e modelos".
+- O catálogo usa FIPE/Parallelum como fonte e pode ser sincronizado novamente.
+- As versões de motor/acabamento da FIPE são agrupadas em modelos genéricos.
+
+PRÉ-CARREGAR TODOS OS MODELOS
+- Com internet, dê dois cliques em SINCRONIZAR_CATALOGO.bat.
+- Ou entre no painel > Marcas e modelos > Sincronizar catálogo completo.
+- Pode levar alguns minutos, pois consulta todas as marcas de carros e motos.
+
+IMPORTANTE
+O sistema também carrega os modelos de uma marca automaticamente na primeira vez em que ela for selecionada. Portanto, a sincronização completa não é obrigatória para começar a testar.

@@ -1,0 +1,15 @@
+ATUALIZAÇÃO V9 — INSTALAÇÃO SEM PERDER SEUS DADOS
+
+1. Pare o servidor com CTRL + C.
+2. Faça backup do arquivo ph_estetica.db.
+3. Copie os arquivos da atualização V9 por cima do projeto atual.
+4. NÃO apague e NÃO substitua o seu ph_estetica.db.
+5. Inicie novamente com:
+   python -m uvicorn app:app --reload
+6. No navegador, pressione CTRL + F5 para recarregar o CSS.
+
+MUDANÇAS
+- WhatsApp formatado na gestão: (62) 99901-5048.
+- Veículo formatado: CHEVROLET - CELTA.
+- Botão WhatsApp com mensagem pronta baseada no status atual.
+- Nenhuma API paga é necessária; o envio é confirmado manualmente pelo WhatsApp.

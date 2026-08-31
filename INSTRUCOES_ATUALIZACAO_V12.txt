@@ -1,0 +1,10 @@
+ATUALIZAÇÃO V12 — FINANCEIRO COMPLETO
+
+1. Pare o site com CTRL + C.
+2. Faça uma cópia de segurança do arquivo ph_estetica.db.
+3. Copie o conteúdo desta atualização por cima da pasta atual do projeto.
+4. NÃO apague nem substitua o seu ph_estetica.db.
+5. Inicie: python -m uvicorn app:app --reload
+6. Abra /admin/financeiro.
+
+A migração cria as novas tabelas automaticamente e sincroniza atendimentos já pagos sem duplicar receita.
