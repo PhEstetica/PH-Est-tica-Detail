@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" fill="none">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1400" y2="900"><stop stop-color="#11141B"/><stop offset="1" stop-color="#07080B"/></linearGradient>
+<linearGradient id="gold" x1="250" y1="200" x2="1130" y2="720"><stop stop-color="#F6D98B"/><stop offset="0.55" stop-color="#F2C14E"/><stop offset="1" stop-color="#D99B16"/></linearGradient>
+</defs>
+<rect width="1400" height="900" rx="44" fill="url(#bg)"/>
+<circle cx="1090" cy="222" r="190" fill="#F2C14E" fill-opacity="0.09"/>
+<circle cx="286" cy="692" r="180" fill="#8AD5FF" fill-opacity="0.07"/>
+<path d="M176 678c46-196 182-309 348-309h284c176 0 305 105 356 278" stroke="#202734" stroke-width="28" stroke-linecap="round"/>
+<path d="M192 665c44-170 162-266 314-266h282c148 0 272 86 326 237" fill="none" stroke="url(#gold)" stroke-width="18" stroke-linecap="round"/>
+<circle cx="420" cy="684" r="76" fill="#090B0F" stroke="#444A54" stroke-width="14"/>
+<circle cx="916" cy="684" r="76" fill="#090B0F" stroke="#444A54" stroke-width="14"/>
+<path d="M392 544h225c93 0 171-66 190-157" stroke="#F7D889" stroke-width="10" stroke-linecap="round"/>
+<path d="M861 526h84l79-134h112l-68 102 69 19-78 61-55-15-65-104-78 71Z" fill="#F2C14E"/>
+<circle cx="1120" cy="666" r="56" fill="#090B0F" stroke="#444A54" stroke-width="12"/>
+<circle cx="900" cy="666" r="56" fill="#090B0F" stroke="#444A54" stroke-width="12"/>
+<path d="M112 220c42 38 76 88 88 138" stroke="#8AD5FF" stroke-width="18" stroke-linecap="round"/>
+<path d="M1300 186c-44 41-79 95-95 149" stroke="#8AD5FF" stroke-width="18" stroke-linecap="round"/>
+<text x="112" y="128" fill="#F4F5F7" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="800">Experiência digital para carros e motos</text>
+<text x="112" y="820" fill="#8D95A4" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Agendamento, acompanhamento, fidelidade e avaliações em uma única central.</text>
+</svg>

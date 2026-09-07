@@ -1,0 +1,28 @@
+PH ESTÉTICA & DETAIL — V13.5.1 HOTFIX CONFIGURAÇÕES
+
+Esta atualização é CONSOLIDADA e corrige o pacote incremental da V13.5 que não levava todos os arquivos da tela de Configurações.
+
+Inclui:
+- Configurações separadas por abas:
+  * Identidade e contato
+  * Mensagens do WhatsApp
+  * Imagens da página inicial
+  * Logo do cabeçalho
+  * Backups
+- Backup com download .db e .zip
+- Restauração de backup .db e .zip
+- Compatibilidade com Persistent Disk /var/data
+- Layout responsivo
+- Preços fixos / "A partir de" / "Sob avaliação"
+- Avisos de avaliação do estado do veículo
+- Novos serviços adicionais de carro e moto
+
+COMO ATUALIZAR NO GITHUB/RENDER:
+1. NÃO envie nem substitua ph_estetica.db.
+2. Envie o conteúdo desta pasta por cima dos arquivos do repositório, mantendo templates/ e static/.
+3. Confirme o commit no GitHub.
+4. No Render: Manual Deploy -> Deploy latest commit.
+5. Quando ficar Live, recarregue a página com CTRL+F5 no PC; no celular feche e abra a aba novamente.
+6. Confira Admin -> Configurações. As 5 abas devem aparecer.
+
+Este pacote não contém banco de dados, backups nem uploads do usuário.

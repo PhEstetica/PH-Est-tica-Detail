@@ -1,0 +1,39 @@
+{% extends 'admin_base.html' %}
+{% block title %}Marcas e modelos — PH ESTÉTICA{% endblock %}
+{% block content %}
+<div class="admin-head"><div><span>CATÁLOGO DE VEÍCULOS</span><h1>Marcas e modelos</h1><p>Base para autocomplete no cadastro. As versões FIPE são agrupadas em modelos genéricos e os nomes originais ficam como termos de busca.</p></div></div>
+
+{% if request.query_params.get('error') %}<div class="notice error">{{request.query_params.get('error')}}</div>{% endif %}
+{% if request.query_params.get('full') %}<div class="notice gold-notice">Sincronização concluída: {{request.query_params.get('brands')}} marcas, {{request.query_params.get('models')}} modelos genéricos a partir de {{request.query_params.get('raw')}} registros FIPE. Erros: {{request.query_params.get('errors')}}.</div>{% endif %}
+{% if request.query_params.get('synced') %}<div class="notice gold-notice">Marca sincronizada: {{request.query_params.get('synced')}} modelos genéricos a partir de {{request.query_params.get('raw')}} registros FIPE.</div>{% endif %}
+
+<section class="admin-section">
+  <div class="catalog-stat-grid">
+    <article class="catalog-stat"><span>MARCAS DE CARROS</span><strong>{{stats.car_brands}}</strong></article>
+    <article class="catalog-stat"><span>MODELOS DE CARROS</span><strong>{{stats.car_models}}</strong></article>
+    <article class="catalog-stat"><span>MARCAS DE MOTOS</span><strong>{{stats.moto_brands}}</strong></article>
+    <article class="catalog-stat"><span>MODELOS DE MOTOS</span><strong>{{stats.moto_models}}</strong></article>
+  </div>
+  <div class="notice">Fonte do catálogo: FIPE via API Parallelum. Snapshot inicial de marcas: agosto/2026. Os modelos podem ser sincronizados novamente para acompanhar lançamentos futuros.</div>
+  <div class="actions">
+    <form method="post" action="/admin/catalogo-veiculos/sincronizar-tudo" onsubmit="return confirm('Sincronizar TODAS as marcas e modelos com a FIPE? Pode levar alguns minutos.')"><button class="btn gold">Sincronizar catálogo completo</button></form>
+    {% if last_sync %}<span class="pill">Última sincronização completa: {{last_sync[:16].replace('T',' ')}}</span>{% endif %}
+  </div>
+</section>
+
+<section class="admin-section">
+  <div class="filter-tabs"><a href="/admin/catalogo-veiculos?vehicle_type=car" class="{{'active' if vehicle_type=='car' else ''}}">Carros</a><a href="/admin/catalogo-veiculos?vehicle_type=moto" class="{{'active' if vehicle_type=='moto' else ''}}">Motos</a></div>
+  <form method="get" class="inline-form" style="margin-top:14px"><input type="hidden" name="vehicle_type" value="{{vehicle_type}}"><label>Pesquisar marca<input name="q" value="{{q}}" placeholder="Ex.: Chevrolet, Honda..."></label><button class="btn ghost">Pesquisar</button></form>
+  <div class="catalog-brand-list" style="margin-top:18px">
+    {% for b in brands %}<a class="{{'active' if selected and selected.id==b.id else ''}}" href="/admin/catalogo-veiculos?vehicle_type={{vehicle_type}}&brand_id={{b.id}}">{{b.name}}{% if not b.active %} · INATIVA{% endif %}</a>{% endfor %}
+  </div>
+</section>
+
+{% if selected %}
+<section class="admin-section">
+  <div class="admin-head"><div><span>{{'MOTO' if selected.vehicle_type=='moto' else 'CARRO'}}</span><h2>{{selected.name}}</h2><p>{{models|length}} modelos genéricos carregados nesta tela.</p></div><form method="post" action="/admin/catalogo-veiculos/sincronizar-marca/{{selected.id}}"><button class="btn gold">Atualizar modelos desta marca</button></form></div>
+  <form method="post" action="/admin/catalogo-veiculos/marca/{{selected.id}}" class="inline-form"><label>Nome da marca<input name="name" value="{{selected.name}}"></label><label class="check inline"><input type="checkbox" name="active" value="1" {% if selected.active %}checked{% endif %}><span>Ativa</span></label><button class="btn ghost">Salvar marca</button></form>
+  {% if models %}<div style="margin-top:20px">{% for m in models %}<form method="post" action="/admin/catalogo-veiculos/modelo/{{m.id}}" class="catalog-model-edit"><label>Modelo<input name="name" value="{{m.name}}"></label><label>Categoria sugerida<select name="suggested_category"><option value="moto" {% if m.suggested_category=='moto' %}selected{% endif %}>Moto</option><option value="car_small" {% if m.suggested_category=='car_small' %}selected{% endif %}>Carro pequeno/médio</option><option value="car_large" {% if m.suggested_category=='car_large' %}selected{% endif %}>Carro grande</option></select></label><label class="check inline"><input type="checkbox" name="active" value="1" {% if m.active %}checked{% endif %}><span>Ativo</span></label><button class="btn ghost compact">Salvar</button></form>{% endfor %}</div>{% else %}<div class="notice">Os modelos desta marca ainda não foram carregados. Clique em “Atualizar modelos desta marca” ou use a sincronização completa.</div>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head">
+  <div><span>GESTÃO</span><h1>Agendamentos</h1></div>
+  <div class="actions" style="margin-top:0">
+    <div class="filter-tabs"><a href="/admin/agendamentos">Todos</a><a href="?category=moto">Motos</a><a href="?category=car_small">Peq./Médios</a><a href="?category=car_large">Grandes</a></div>
+    <a class="btn gold" href="/admin/agendamentos/registrar">+ Registrar atendimento realizado</a>
+  </div>
+</div>
+{% if request.query_params.get('deleted') %}<div class="notice gold-notice">Registro excluído com sucesso. O histórico e eventuais pontos de fidelidade vinculados também foram ajustados.</div>{% endif %}
+<div class="table-wrap"><table>
+<tr><th>Data</th><th>Cliente</th><th>WhatsApp</th><th>Veículo</th><th>Serviço</th><th>Valor</th><th>Pagamento</th><th>Status</th><th>Ações</th></tr>
+{% for a in rows %}
+<tr>
+  <td>{{fmt_date(a.appointment_date)}}<br>{{a.appointment_time}}</td>
+  <td><a href="/admin/agendamento/{{a.id}}">{{a.customer_name}}</a></td>
+  <td><a class="admin-phone-link" href="{{status_whatsapp_url(a)}}" target="_blank" rel="noopener">{{format_phone_br(a.phone)}}</a></td><td>{{a.brand|upper}} - {{a.model|upper}}</td><td>{{a.service_name}}</td><td>{{brl(a.final_total or a.estimated_total)}}</td><td>{{payment_label(a.payment_method)}}<br><small>{{'PAGO' if a.payment_status=='paid' else 'PENDENTE'}}</small></td>
+  <td><form method="post" action="/admin/agendamento/{{a.id}}/status"><select name="status" onchange="this.form.submit()">{% for k,l in status_labels.items() %}<option value="{{k}}" {% if a.status==k %}selected{% endif %}>{{l}}</option>{% endfor %}</select></form></td>
+  <td><div class="table-actions"><a class="btn text" href="/admin/agendamento/{{a.id}}">Abrir</a><a class="btn whatsapp compact" href="{{status_whatsapp_url(a)}}" target="_blank" rel="noopener">WhatsApp</a><form method="post" action="/admin/agendamento/{{a.id}}/excluir" onsubmit="return confirm('Excluir definitivamente este atendimento? Esta ação remove o registro, histórico relacionado e não pode ser desfeita.');"><button class="btn danger compact" type="submit">Excluir</button></form></div></td>
+</tr>
+{% endfor %}
+</table></div>
+{% endblock %}

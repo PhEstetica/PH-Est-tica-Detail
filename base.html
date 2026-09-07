@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{% block title %}PH ESTÉTICA & DETAIL{% endblock %}</title>
+  <meta name="theme-color" content="#0b0b0d">
+  <link rel="icon" href="{{brand_logo_url}}">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/"><img src="{{brand_logo_url}}" alt="PH ESTÉTICA & DETAIL"><span>PH ESTÉTICA & DETAIL</span></a>
+  <nav class="desktop-nav">
+    <a href="/">Início</a><a href="/agendar">Agendar</a><a href="/garagem">Minha Garagem</a><a href="/acompanhar">Acompanhar</a>
+    {% if customer %}<a href="/historico">Histórico</a><a href="/notificacoes">Avisos</a><a href="/logout">Sair</a>{% else %}<a href="/login">Entrar</a>{% endif %}
+  </nav>
+</header>
+<main>{% block content %}{% endblock %}</main>
+<a class="whatsapp-float" target="_blank" rel="noopener" href="https://wa.me/{{ whatsapp_number }}?text=Olá!%20Vim%20pelo%20site%20da%20PH%20ESTÉTICA%20%26%20DETAIL.">WhatsApp</a>
+<nav class="mobile-nav">
+  <a href="/">Início</a><a class="primary" href="/agendar">Agendar</a><a href="/garagem">Garagem</a><a href="/acompanhar">Acompanhar</a><a href="{% if customer %}/notificacoes{% else %}/login{% endif %}">Perfil</a>
+</nav>
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

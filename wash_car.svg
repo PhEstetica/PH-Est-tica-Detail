@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" fill="none">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1400" y2="900"><stop stop-color="#11141A"/><stop offset="1" stop-color="#07080B"/></linearGradient>
+<linearGradient id="gold" x1="338" y1="240" x2="1034" y2="640"><stop stop-color="#F6D98B"/><stop offset="0.6" stop-color="#F2C14E"/><stop offset="1" stop-color="#D99B16"/></linearGradient>
+<radialGradient id="foam" cx="0" cy="0" r="1" gradientTransform="translate(760 240) rotate(90) scale(350 530)"><stop stop-color="#F6F9FF" stop-opacity="0.95"/><stop offset="1" stop-color="#F6F9FF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1400" height="900" rx="44" fill="url(#bg)"/>
+<rect x="62" y="58" width="1276" height="784" rx="30" fill="#0D1015" stroke="#222833"/>
+<rect x="124" y="136" width="1152" height="640" rx="24" fill="#0F131A"/>
+<path d="M210 258H1192" stroke="#1E2430" stroke-width="22" stroke-linecap="round"/>
+<path d="M266 258V730" stroke="#1E2430" stroke-width="18" stroke-linecap="round"/>
+<path d="M1136 258V730" stroke="#1E2430" stroke-width="18" stroke-linecap="round"/>
+<path d="M418 532c0-96 70-174 156-174h270c92 0 172 62 196 151l19 72c8 32-16 63-50 63H491c-42 0-73-39-63-80l-10-32Z" fill="#202632"/>
+<path d="M472 485c0-67 49-121 109-121h252c63 0 121 41 141 101l16 46H472v-26Z" fill="url(#gold)"/>
+<path d="M564 406h150c27 0 47 16 60 42H519c9-28 25-42 45-42Z" fill="#C1E6FF" fill-opacity="0.85"/>
+<rect x="492" y="614" width="120" height="42" rx="20" fill="#11151B"/>
+<rect x="874" y="614" width="120" height="42" rx="20" fill="#11151B"/>
+<circle cx="562" cy="635" r="49" fill="#090B0F" stroke="#4A4F59" stroke-width="12"/>
+<circle cx="924" cy="635" r="49" fill="#090B0F" stroke="#4A4F59" stroke-width="12"/>
+<path d="M374 349c84 6 131 28 164 55 42 34 71 43 142 47 37 2 112-6 186-28 73-22 126-55 192-63" stroke="#F7D889" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round"/>
+<ellipse cx="741" cy="350" rx="410" ry="220" fill="url(#foam)"/>
+<path d="M328 202c48 38 60 48 83 86" stroke="#8AD5FF" stroke-width="14" stroke-linecap="round"/>
+<path d="M1207 202c-48 38-60 48-83 86" stroke="#8AD5FF" stroke-width="14" stroke-linecap="round"/>
+<circle cx="432" cy="253" r="10" fill="#BFE8FF"/><circle cx="398" cy="292" r="14" fill="#DFF5FF"/><circle cx="443" cy="309" r="9" fill="#DFF5FF"/>
+<circle cx="1048" cy="253" r="10" fill="#BFE8FF"/><circle cx="1082" cy="292" r="14" fill="#DFF5FF"/><circle cx="1037" cy="309" r="9" fill="#DFF5FF"/>
+<text x="124" y="104" fill="#F4F5F7" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="800">Lavagem premium para carros</text>
+<text x="124" y="792" fill="#8D95A4" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Acabamento, proteção e cuidado visual em uma experiência mais profissional.</text>
+</svg>

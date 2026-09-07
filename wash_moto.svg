@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" fill="none">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1400" y2="900"><stop stop-color="#0F1319"/><stop offset="1" stop-color="#07090D"/></linearGradient>
+<linearGradient id="gold" x1="360" y1="280" x2="1050" y2="650"><stop stop-color="#F6D98B"/><stop offset="0.6" stop-color="#F2C14E"/><stop offset="1" stop-color="#D99B16"/></linearGradient>
+<radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(880 278) rotate(90) scale(280 440)"><stop stop-color="#F6F9FF" stop-opacity="0.9"/><stop offset="1" stop-color="#F6F9FF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1400" height="900" rx="44" fill="url(#bg)"/>
+<rect x="60" y="60" width="1280" height="780" rx="32" fill="#0D1116" stroke="#1E2430"/>
+<circle cx="472" cy="612" r="98" fill="#090B0F" stroke="#454B55" stroke-width="18"/>
+<circle cx="934" cy="612" r="98" fill="#090B0F" stroke="#454B55" stroke-width="18"/>
+<path d="M472 514c58 0 102 43 102 98s-44 98-102 98-102-43-102-98 44-98 102-98Z" fill="#141923"/>
+<path d="M934 514c58 0 102 43 102 98s-44 98-102 98-102-43-102-98 44-98 102-98Z" fill="#141923"/>
+<path d="M520 604h129l84-156h146l-62 95h110l-85 61-43 11-69-107-64 112H520c-22 0-32-9-32-16s10-16 32-16Z" fill="url(#gold)"/>
+<path d="M726 462l72-117h76l50 106H726v11Z" fill="#202634"/>
+<path d="M758 332h137c25 0 51 11 66 32l12 16H791c-13 0-24-5-31-15l-17-23c-10-13-1-10 15-10Z" fill="#F3C75B"/>
+<path d="M628 420l70 34-41 81-84-34 55-81Z" fill="#1D2430"/>
+<path d="M1029 430c38 34 60 60 70 96" stroke="#8AD5FF" stroke-width="16" stroke-linecap="round"/>
+<path d="M357 373c58 23 103 59 129 106" stroke="#8AD5FF" stroke-width="16" stroke-linecap="round"/>
+<circle cx="1117" cy="543" r="10" fill="#DFF5FF"/><circle cx="1086" cy="522" r="15" fill="#DFF5FF"/><circle cx="1078" cy="564" r="8" fill="#BFE8FF"/>
+<circle cx="494" cy="470" r="10" fill="#DFF5FF"/><circle cx="453" cy="448" r="15" fill="#DFF5FF"/><circle cx="441" cy="490" r="8" fill="#BFE8FF"/>
+<ellipse cx="828" cy="302" rx="286" ry="180" fill="url(#glow)"/>
+<path d="M340 700c87-54 194-89 328-100 142-12 301 1 461 45 77 21 160 51 237 97" stroke="#F7D889" stroke-opacity="0.4" stroke-width="5" stroke-linecap="round"/>
+<text x="124" y="118" fill="#F4F5F7" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="800">Cuidados especiais para motos</text>
+<text x="124" y="790" fill="#8D95A4" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Serviços mais detalhados e apresentação premium para quem cuida da moto de verdade.</text>
+</svg>
