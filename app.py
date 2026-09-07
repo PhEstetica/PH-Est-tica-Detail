@@ -52,12 +52,6 @@ async def lifespan(_app):
 
 
 app = FastAPI(title=BUSINESS_NAME, lifespan=lifespan)
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=os.getenv("PH_SESSION_SECRET", "DEV-ONLY-CHANGE-ME-" + "ph-estetica"),
-    same_site="lax",
-    https_only=False,
-)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
@@ -72,6 +66,33 @@ async def ensure_daily_backup(request: Request, call_next):
         create_daily_backup()
         _last_backup_day = today_key
     return await call_next(request)
+
+@app.middleware("http")
+async def admin_access_guard(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/admin") and path not in {"/admin/login", "/admin/logout"}:
+        if not request.session.get("is_admin"):
+            return RedirectResponse("/admin/login", 303)
+        user = admin_user_from_session(request)
+        if not user:
+            request.session.clear()
+            return RedirectResponse("/admin/login",303)
+        if path.startswith("/admin/usuarios") and user["role"] not in {"master","manager"}:
+            return HTMLResponse("<h1>Acesso restrito</h1><p>Somente o usuário mestre ou gerente pode administrar usuários.</p><p><a href='/admin'>Voltar ao painel</a></p>", status_code=403)
+        permission = admin_permission_for_path(path)
+        if permission and not admin_can(request, permission):
+            if path in {"/admin", "/admin/"}:
+                return RedirectResponse(admin_first_allowed_url(request),303)
+            return HTMLResponse("<h1>Acesso não autorizado</h1><p>Seu usuário não possui permissão para esta área.</p><p><a href='/admin/meu-acesso'>Meu acesso</a></p>", status_code=403)
+    return await call_next(request)
+
+# SessionMiddleware fica por fora dos middlewares acima para disponibilizar request.session.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("PH_SESSION_SECRET", "DEV-ONLY-CHANGE-ME-" + "ph-estetica"),
+    same_site="lax",
+    https_only=False,
+)
 
 STATUS_LABELS = {
     "scheduled": "AGENDADO",
@@ -107,7 +128,7 @@ DEFAULT_COMPANY_SETTINGS = {
     "home_headline": "Mais que uma lavagem. Um cuidado completo.",
     "home_subtitle": "Agende em poucos passos, conte como o veículo está e acompanhe tudo com uma experiência mais profissional para carros e motos.",
     "home_gallery_title": "Resultados e cuidados da PH",
-    "home_hero_image_url": "https://images.unsplash.com/photo-1746593934498-b335e4e04845?auto=format&fit=crop&w=1800&q=82",
+    "home_hero_image_url": "/static/ph_hero_v15.png",
     "home_car_image_url": "https://images.unsplash.com/photo-1761312834150-4beefff097a7?auto=format&fit=crop&w=1600&q=82",
     "home_moto_image_url": "https://images.unsplash.com/photo-1759825045061-ac853e131f60?auto=format&fit=crop&w=1600&q=82",
     "home_detail_image_url": "https://images.unsplash.com/photo-1732357417676-9c4c14cd23c7?auto=format&fit=crop&w=1600&q=82",
@@ -136,6 +157,30 @@ HOME_IMAGE_SLOTS = {
     "detail": ("home_detail_image_url", "Detalhe automotivo"),
     "moto_detail": ("home_moto_detail_image_url", "Detalhe de moto"),
 }
+
+# V15 — controle de acesso administrativo por função.
+# Usuário mestre possui acesso total. Gerentes possuem acesso operacional total
+# e podem criar/editar funcionários. Funcionários recebem permissões por módulos.
+ADMIN_PERMISSION_DEFS = [
+    ("dashboard", "Dashboard", "Resumo geral do painel"),
+    ("today", "Hoje", "Atendimentos e tarefas do dia"),
+    ("appointments", "Agendamentos", "Agendamentos, registrar realizado, status, fotos e check-in"),
+    ("kanban", "Kanban", "Acompanhamento visual dos atendimentos"),
+    ("services", "Serviços e preços", "Serviços principais, adicionais e preços"),
+    ("vehicle_questions", "Perguntas do veículo", "Perguntas usadas na avaliação do estado"),
+    ("vehicle_catalog", "Marcas e modelos", "Catálogo de carros e motos"),
+    ("schedule", "Configurar agenda", "Horários, capacidade e bloqueios"),
+    ("customers", "Clientes", "Cadastros e histórico dos clientes"),
+    ("finance", "Financeiro", "Receitas, despesas, investimentos, ajudantes e fechamento"),
+    ("reviews", "Avaliações", "Visualizar e administrar avaliações"),
+    ("gallery", "Galeria", "Fotos exibidas no site"),
+    ("reminders", "Lembretes", "Lembretes administrativos"),
+    ("boxes", "Boxes", "Boxes/áreas de atendimento"),
+    ("promotions", "Promoções", "Campanhas e promoções"),
+    ("settings", "Configurações", "Identidade, WhatsApp, imagens e aparência"),
+    ("backups", "Backups", "Baixar e restaurar backups"),
+]
+ADMIN_PERMISSION_KEYS = {item[0] for item in ADMIN_PERMISSION_DEFS}
 
 
 FIPE_V2_BASE = "https://fipe.parallelum.com.br/api/v2"
@@ -665,6 +710,91 @@ def verify_pin(pin: str, encoded: str) -> bool:
         return False
 
 
+def hash_admin_password(password: str, salt: Optional[str] = None) -> str:
+    """Hash PBKDF2 para senhas do painel administrativo."""
+    salt = salt or secrets.token_hex(16)
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), bytes.fromhex(salt), 260_000)
+    return f"{salt}${derived.hex()}"
+
+
+def verify_admin_password(password: str, encoded: str) -> bool:
+    try:
+        salt, stored = encoded.split("$", 1)
+        test = hash_admin_password(password, salt).split("$", 1)[1]
+        return hmac.compare_digest(test, stored)
+    except Exception:
+        return False
+
+
+def _permissions_from_value(value: str | None) -> set[str]:
+    try:
+        raw = json.loads(value or "[]")
+        if isinstance(raw, list):
+            return {str(x) for x in raw if str(x) in ADMIN_PERMISSION_KEYS}
+    except Exception:
+        pass
+    return set()
+
+
+def admin_user_from_session(request: Request):
+    uid = request.session.get("admin_user_id")
+    if not uid:
+        return None
+    try:
+        with closing(db_conn()) as conn:
+            return conn.execute("SELECT * FROM admin_users WHERE id=? AND active=1", (int(uid),)).fetchone()
+    except Exception:
+        return None
+
+
+def admin_can(request: Request, permission: str) -> bool:
+    user = admin_user_from_session(request)
+    if not user:
+        return False
+    role = (user["role"] or "staff").lower()
+    if role in {"master", "manager"}:
+        return True
+    return permission in _permissions_from_value(user["permissions_json"])
+
+
+def admin_permission_for_path(path: str) -> str | None:
+    """Traduz a URL do painel para o módulo usado no controle de acesso."""
+    if path in {"/admin", "/admin/"}: return "dashboard"
+    if path.startswith("/admin/backup"): return "backups"
+    if path.startswith("/admin/configuracoes"): return "settings"
+    if path.startswith("/admin/usuarios"): return None  # regras próprias: mestre/gerente
+    if path.startswith("/admin/meu-acesso"): return None
+    if path.startswith("/admin/financeiro") or path.startswith("/admin/pagamentos"): return "finance"
+    if path.startswith("/admin/agendamento/") and ("/financeiro" in path or "cobranca" in path): return "finance"
+    if path.startswith("/admin/agendamento") or path.startswith("/admin/agendamentos"): return "appointments"
+    if path.startswith("/admin/hoje"): return "today"
+    if path.startswith("/admin/kanban"): return "kanban"
+    if path.startswith("/admin/servicos") or path.startswith("/admin/extras"): return "services"
+    if path.startswith("/admin/perguntas-veiculo"): return "vehicle_questions"
+    if path.startswith("/admin/catalogo-veiculos"): return "vehicle_catalog"
+    if path.startswith("/admin/agenda"): return "schedule"
+    if path.startswith("/admin/clientes"): return "customers"
+    if path.startswith("/admin/avaliacoes"): return "reviews"
+    if path.startswith("/admin/galeria"): return "gallery"
+    if path.startswith("/admin/lembretes"): return "reminders"
+    if path.startswith("/admin/boxes"): return "boxes"
+    if path.startswith("/admin/promocoes"): return "promotions"
+    return None
+
+
+def admin_first_allowed_url(request: Request) -> str:
+    choices = [
+        ("dashboard", "/admin"), ("today", "/admin/hoje"), ("appointments", "/admin/agendamentos"),
+        ("kanban", "/admin/kanban"), ("services", "/admin/servicos"), ("schedule", "/admin/agenda"),
+        ("customers", "/admin/clientes"), ("finance", "/admin/financeiro"), ("reviews", "/admin/avaliacoes"),
+        ("gallery", "/admin/galeria"), ("settings", "/admin/configuracoes"),
+    ]
+    for permission, url in choices:
+        if admin_can(request, permission):
+            return url
+    return "/admin/meu-acesso"
+
+
 def normalize_phone(phone: str) -> str:
     digits = re.sub(r"\D", "", phone or "")
     if digits.startswith("55") and len(digits) > 11:
@@ -1169,6 +1299,25 @@ def init_db():
         sort_order INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS admin_users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        display_name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'staff',
+        permissions_json TEXT NOT NULL DEFAULT '[]',
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        created_by INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS admin_access_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        admin_user_id INTEGER,
+        action TEXT NOT NULL,
+        details TEXT,
+        created_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT
@@ -1366,6 +1515,24 @@ def init_db():
                 if current == old_value:
                     conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)", (key, DEFAULT_COMPANY_SETTINGS[key]))
             conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('wa_neutral_vehicle_migrated_v11','1')")
+        # V15 — cria o primeiro usuário mestre usando as credenciais antigas do Render/local.
+        if conn.execute("SELECT COUNT(*) FROM admin_users").fetchone()[0] == 0:
+            master_user = (os.getenv("PH_ADMIN_USER", "admin") or "admin").strip()
+            master_pass = os.getenv("PH_ADMIN_PASSWORD", "admin123") or "admin123"
+            stamp = now_iso()
+            conn.execute(
+                "INSERT INTO admin_users(username,display_name,password_hash,role,permissions_json,active,created_at,updated_at) VALUES (?,?,?,?,?,1,?,?)",
+                (master_user, "Usuário mestre", hash_admin_password(master_pass), "master", json.dumps(sorted(ADMIN_PERMISSION_KEYS)), stamp, stamp),
+            )
+
+        # V15 — nova identidade visual padrão. O arquivo antigo continua preservado no servidor;
+        # o usuário pode substituir a logo e o banner novamente pelo Admin.
+        if setting(conn, "premium_home_v15_migrated", "") != "1":
+            conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('brand_logo_source','v15')")
+            conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('home_hero_image_url',?)", (DEFAULT_COMPANY_SETTINGS["home_hero_image_url"],))
+            conn.execute("INSERT OR IGNORE INTO settings(key,value) VALUES ('auth_logo_path','')")
+            conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('premium_home_v15_migrated','1')")
+
         # Formas de pagamento editáveis. Cartão começa desativado porque pode não haver maquininha.
         if conn.execute("SELECT COUNT(*) FROM payment_methods").fetchone()[0] == 0:
             conn.executemany("INSERT INTO payment_methods(code,name,active,sort_order) VALUES (?,?,?,?)", [
@@ -1668,15 +1835,22 @@ def template_ctx(request: Request, **kwargs):
         with closing(db_conn()) as conn:
             company = get_company_settings(conn)
             logo_path = setting(conn, "brand_logo_path", "")
+            logo_source = setting(conn, "brand_logo_source", "v15")
+            auth_logo_path = setting(conn, "auth_logo_path", "")
     except Exception:
         company = dict(DEFAULT_COMPANY_SETTINGS)
         logo_path = ""
+        logo_source = "v15"
+        auth_logo_path = ""
     wa = re.sub(r"\D", "", company.get("whatsapp_number") or WHATSAPP_NUMBER) or WHATSAPP_NUMBER
     display = WHATSAPP_DISPLAY
     if len(wa) >= 12 and wa.startswith("55"):
         local = wa[2:]
         if len(local) == 11:
             display = f"({local[:2]}) {local[2:7]}-{local[7:]}"
+    brand_logo_url = (f"/uploads/{logo_path}" if logo_source == "custom" and logo_path else "/static/ph_logo_v15.png")
+    auth_logo_url = (f"/uploads/{auth_logo_path}" if auth_logo_path else brand_logo_url)
+    current_admin = admin_user_from_session(request) if request.session.get("is_admin") else None
     return {
         "request": request,
         "business_name": BUSINESS_NAME,
@@ -1696,7 +1870,12 @@ def template_ctx(request: Request, **kwargs):
         "format_phone_br": format_phone_br,
         "status_whatsapp_url": status_whatsapp_url,
         "company": company,
-        "brand_logo_url": (f"/uploads/{logo_path}" if logo_path else "/static/site_mark.svg"),
+        "brand_logo_url": brand_logo_url,
+        "auth_logo_url": auth_logo_url,
+        "admin_user": current_admin,
+        "admin_can": (lambda permission: admin_can(request, permission)),
+        "admin_permission_defs": ADMIN_PERMISSION_DEFS,
+        "admin_permissions_from_value": _permissions_from_value,
         **kwargs,
     }
 
@@ -2250,18 +2429,141 @@ def admin_login_page(request: Request):
 
 @app.post("/admin/login")
 def admin_login(request: Request, username: str=Form(...), password: str=Form(...)):
-    expected_user = os.getenv("PH_ADMIN_USER", "admin")
-    expected_pass = os.getenv("PH_ADMIN_PASSWORD", "admin123")
-    if hmac.compare_digest(username, expected_user) and hmac.compare_digest(password, expected_pass):
-        request.session["is_admin"] = True
-        return RedirectResponse("/admin",303)
-    return templates.TemplateResponse(request, "admin_login.html", template_ctx(request,error="Credenciais inválidas."), status_code=401)
+    with closing(db_conn()) as conn:
+        user = conn.execute("SELECT * FROM admin_users WHERE LOWER(username)=LOWER(?) AND active=1", ((username or "").strip(),)).fetchone()
+        if user and verify_admin_password(password or "", user["password_hash"]):
+            request.session.clear()
+            request.session["is_admin"] = True
+            request.session["admin_user_id"] = int(user["id"])
+            request.session["admin_role"] = user["role"]
+            request.session["admin_username"] = user["username"]
+            conn.execute("INSERT INTO admin_access_log(admin_user_id,action,details,created_at) VALUES (?,?,?,?)", (user["id"], "login", request.client.host if request.client else "", now_iso()))
+            conn.commit()
+            return RedirectResponse(admin_first_allowed_url(request),303)
+    return templates.TemplateResponse(request, "admin_login.html", template_ctx(request,error="Usuário ou senha inválidos."), status_code=401)
 
 
 @app.get("/admin/logout")
 def admin_logout(request: Request):
-    request.session.pop("is_admin", None)
+    uid = request.session.get("admin_user_id")
+    if uid:
+        try:
+            with closing(db_conn()) as conn:
+                conn.execute("INSERT INTO admin_access_log(admin_user_id,action,details,created_at) VALUES (?,?,?,?)", (uid, "logout", "", now_iso()))
+                conn.commit()
+        except Exception:
+            pass
+    request.session.clear()
     return RedirectResponse("/admin/login",303)
+
+
+@app.get("/admin/meu-acesso", response_class=HTMLResponse)
+def admin_my_access_page(request: Request):
+    if not request.session.get("is_admin"):
+        return RedirectResponse("/admin/login", 303)
+    user = admin_user_from_session(request)
+    if not user:
+        request.session.clear(); return RedirectResponse("/admin/login",303)
+    return templates.TemplateResponse(request, "admin_my_access.html", template_ctx(request, user=user))
+
+
+@app.post("/admin/meu-acesso")
+def admin_my_access_save(request: Request, current_password: str=Form(...), username: str=Form(...), display_name: str=Form(...), new_password: str=Form(""), confirm_password: str=Form("")):
+    if not request.session.get("is_admin"):
+        raise HTTPException(401)
+    user = admin_user_from_session(request)
+    if not user or not verify_admin_password(current_password or "", user["password_hash"]):
+        return RedirectResponse("/admin/meu-acesso?error=senha_atual",303)
+    username=(username or "").strip()
+    display_name=(display_name or "").strip() or username
+    if len(username) < 3:
+        return RedirectResponse("/admin/meu-acesso?error=usuario_curto",303)
+    if new_password and len(new_password) < 6:
+        return RedirectResponse("/admin/meu-acesso?error=senha_curta",303)
+    if new_password != confirm_password:
+        return RedirectResponse("/admin/meu-acesso?error=confirmacao",303)
+    with closing(db_conn()) as conn:
+        exists=conn.execute("SELECT id FROM admin_users WHERE LOWER(username)=LOWER(?) AND id<>?",(username,user["id"])).fetchone()
+        if exists:
+            return RedirectResponse("/admin/meu-acesso?error=usuario_existe",303)
+        if new_password:
+            conn.execute("UPDATE admin_users SET username=?,display_name=?,password_hash=?,updated_at=? WHERE id=?",(username,display_name,hash_admin_password(new_password),now_iso(),user["id"]))
+        else:
+            conn.execute("UPDATE admin_users SET username=?,display_name=?,updated_at=? WHERE id=?",(username,display_name,now_iso(),user["id"]))
+        conn.commit()
+    request.session["admin_username"] = username
+    return RedirectResponse("/admin/meu-acesso?saved=1",303)
+
+
+@app.get("/admin/usuarios", response_class=HTMLResponse)
+def admin_users_page(request: Request):
+    if not request.session.get("is_admin"):
+        return RedirectResponse("/admin/login",303)
+    actor=admin_user_from_session(request)
+    if not actor or actor["role"] not in {"master","manager"}:
+        raise HTTPException(403, "Somente o usuário mestre ou gerente pode administrar acessos.")
+    with closing(db_conn()) as conn:
+        users=conn.execute("SELECT * FROM admin_users ORDER BY CASE role WHEN 'master' THEN 0 WHEN 'manager' THEN 1 ELSE 2 END, display_name COLLATE NOCASE").fetchall()
+    return templates.TemplateResponse(request,"admin_users.html",template_ctx(request,users=users,permission_defs=ADMIN_PERMISSION_DEFS))
+
+
+@app.post("/admin/usuarios/novo")
+async def admin_user_create(request: Request):
+    if not request.session.get("is_admin"): raise HTTPException(401)
+    actor=admin_user_from_session(request)
+    if not actor or actor["role"] not in {"master","manager"}: raise HTTPException(403)
+    form=await request.form()
+    username=(form.get("username") or "").strip(); display_name=(form.get("display_name") or "").strip() or username
+    password=str(form.get("password") or "")
+    requested_role=str(form.get("role") or "staff")
+    role = requested_role if actor["role"]=="master" and requested_role in {"manager","staff"} else "staff"
+    if len(username)<3 or len(password)<6:
+        return RedirectResponse("/admin/usuarios?error=dados",303)
+    perms=sorted({key for key in ADMIN_PERMISSION_KEYS if form.get(f"perm_{key}")=="1"})
+    if role=="manager": perms=sorted(ADMIN_PERMISSION_KEYS)
+    try:
+        with closing(db_conn()) as conn:
+            stamp=now_iso()
+            conn.execute("INSERT INTO admin_users(username,display_name,password_hash,role,permissions_json,active,created_at,updated_at,created_by) VALUES (?,?,?,?,?,1,?,?,?)",(username,display_name,hash_admin_password(password),role,json.dumps(perms),stamp,stamp,actor["id"]))
+            conn.commit()
+    except sqlite3.IntegrityError:
+        return RedirectResponse("/admin/usuarios?error=usuario_existe",303)
+    return RedirectResponse("/admin/usuarios?created=1",303)
+
+
+@app.post("/admin/usuarios/{user_id}")
+async def admin_user_update(request: Request, user_id: int):
+    if not request.session.get("is_admin"): raise HTTPException(401)
+    actor=admin_user_from_session(request)
+    if not actor or actor["role"] not in {"master","manager"}: raise HTTPException(403)
+    form=await request.form()
+    with closing(db_conn()) as conn:
+        target=conn.execute("SELECT * FROM admin_users WHERE id=?",(user_id,)).fetchone()
+        if not target: raise HTTPException(404)
+        # Gerente só administra funcionários. Mestre não pode ser rebaixado/desativado por ninguém.
+        if actor["role"]=="manager" and target["role"]!="staff": raise HTTPException(403)
+        if target["role"]=="master": raise HTTPException(403, "Altere o usuário mestre em Meu acesso.")
+        username=(form.get("username") or target["username"]).strip(); display_name=(form.get("display_name") or target["display_name"]).strip()
+        role=target["role"]
+        if actor["role"]=="master" and target["role"]!="master":
+            requested=str(form.get("role") or target["role"]); role=requested if requested in {"manager","staff"} else target["role"]
+        active=1 if form.get("active")=="1" else 0
+        if target["role"]=="master": active=1; role="master"
+        if int(target["id"])==int(actor["id"]): active=1
+        perms=sorted({key for key in ADMIN_PERMISSION_KEYS if form.get(f"perm_{key}")=="1"})
+        if role in {"master","manager"}: perms=sorted(ADMIN_PERMISSION_KEYS)
+        new_password=str(form.get("new_password") or "")
+        if new_password and len(new_password)<6:
+            return RedirectResponse("/admin/usuarios?error=senha_curta",303)
+        try:
+            if new_password:
+                conn.execute("UPDATE admin_users SET username=?,display_name=?,role=?,permissions_json=?,active=?,password_hash=?,updated_at=? WHERE id=?",(username,display_name,role,json.dumps(perms),active,hash_admin_password(new_password),now_iso(),user_id))
+            else:
+                conn.execute("UPDATE admin_users SET username=?,display_name=?,role=?,permissions_json=?,active=?,updated_at=? WHERE id=?",(username,display_name,role,json.dumps(perms),active,now_iso(),user_id))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            return RedirectResponse("/admin/usuarios?error=usuario_existe",303)
+    return RedirectResponse("/admin/usuarios?saved=1",303)
 
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -3317,11 +3619,48 @@ async def admin_logo_upload(request: Request, logo: UploadFile = File(...)):
     with closing(db_conn()) as conn:
         old = setting(conn, "brand_logo_path", "")
         conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('brand_logo_path',?)", (fname,))
+        conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('brand_logo_source','custom')")
         conn.commit()
     if old:
         try: (UPLOAD_DIR / old).unlink(missing_ok=True)
         except OSError: pass
     return RedirectResponse("/admin/configuracoes?logo=1#logo", 303)
+
+
+@app.post("/admin/configuracoes/logo/restaurar")
+def admin_logo_restore_v15(request: Request):
+    _admin_required(request)
+    with closing(db_conn()) as conn:
+        conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('brand_logo_source','v15')")
+        conn.commit()
+    return RedirectResponse("/admin/configuracoes?logo_default=1#logo", 303)
+
+
+@app.post("/admin/configuracoes/logo-cadastro")
+async def admin_auth_logo_upload(request: Request, logo: UploadFile = File(...)):
+    _admin_required(request)
+    fname = await _save_image(logo, "auth_logo")
+    with closing(db_conn()) as conn:
+        old = setting(conn, "auth_logo_path", "")
+        conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('auth_logo_path',?)", (fname,))
+        conn.commit()
+    if old:
+        try: (UPLOAD_DIR / old).unlink(missing_ok=True)
+        except OSError: pass
+    return RedirectResponse("/admin/configuracoes?auth_logo=1#logo", 303)
+
+
+@app.post("/admin/configuracoes/logo-cadastro/restaurar")
+def admin_auth_logo_restore(request: Request):
+    _admin_required(request)
+    with closing(db_conn()) as conn:
+        old = setting(conn, "auth_logo_path", "")
+        conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('auth_logo_path','')")
+        conn.commit()
+    if old:
+        try: (UPLOAD_DIR / old).unlink(missing_ok=True)
+        except OSError: pass
+    return RedirectResponse("/admin/configuracoes?auth_logo_default=1#logo", 303)
 
 
 @app.post("/admin/configuracoes/imagem-home/{slot}")
