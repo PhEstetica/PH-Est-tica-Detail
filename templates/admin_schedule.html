@@ -4,175 +4,107 @@
   <div>
     <span>AGENDA INTELIGENTE</span>
     <h1>Configurar agenda</h1>
-    <p>Defina um horário padrão para vários dias de uma vez e ajuste exceções quando precisar.</p>
+    <p>Horários, capacidade e bloqueios separados para ficar mais rápido de configurar.</p>
   </div>
 </div>
 
-{% if request.query_params.get('saved') %}
-<div class="notice gold-notice">Agenda atualizada com sucesso.</div>
-{% endif %}
-{% if request.query_params.get('error') %}
-<div class="notice error">{{ request.query_params.get('error') }}</div>
-{% endif %}
+{% if request.query_params.get('saved') %}<div class="notice gold-notice">Agenda atualizada com sucesso.</div>{% endif %}
+{% if request.query_params.get('error') %}<div class="notice error">{{ request.query_params.get('error') }}</div>{% endif %}
 
-<div class="admin-grid-2 schedule-layout">
-  <section class="admin-section schedule-quick-section">
-    <div class="section-title-row">
-      <div>
-        <span class="eyebrow-small">CONFIGURAÇÃO RÁPIDA</span>
-        <h2>Horário padrão</h2>
-        <p>Escolha os dias e aplique o mesmo horário de uma só vez.</p>
-      </div>
-    </div>
+<div class="admin-tab-group" data-admin-tab-group="agenda-principal" data-default-tab="horarios">
+  <nav class="admin-tabs-nav sticky-tabs" aria-label="Áreas da agenda">
+    <button type="button" class="admin-tab-btn" data-admin-tab="horarios">Horários</button>
+    <button type="button" class="admin-tab-btn" data-admin-tab="capacidade">Capacidade</button>
+    <button type="button" class="admin-tab-btn" data-admin-tab="bloqueios">Bloqueios</button>
+  </nav>
 
-    <form class="card form-stack schedule-preset-form" method="post" action="/admin/agenda/aplicar-padrao" id="schedulePresetForm">
-      <div>
-        <label>Dias da semana</label>
-        <div class="schedule-day-actions">
-          <button type="button" class="btn text" data-days="0,1,2,3,4">Seg–Sex</button>
-          <button type="button" class="btn text" data-days="0,1,2,3,4,5">Seg–Sáb</button>
-          <button type="button" class="btn text" data-days="0,1,2,3,4,5,6">Todos</button>
-          <button type="button" class="btn text" data-days="">Limpar</button>
-        </div>
-        <div class="weekday-picker">
-          {% set short_days=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'] %}
-          {% for d in short_days %}
-          <label class="weekday-chip">
-            <input type="checkbox" name="weekdays" value="{{loop.index0}}">
-            <span>{{d}}</span>
-          </label>
-          {% endfor %}
-        </div>
-      </div>
+  <div class="admin-tab-panel tab-panel-shell" data-admin-tab-panel="horarios">
+    <div class="tab-panel-head"><div><span class="tab-kicker">FUNCIONAMENTO</span><h2>Horários da semana</h2><p>Use um horário padrão ou faça ajustes específicos por dia.</p></div></div>
 
-      <label>Aplicar como
-        <select name="preset_state" id="presetState">
-          <option value="open">Aberto</option>
-          <option value="closed">Fechado</option>
-        </select>
-      </label>
+    <div class="admin-tab-group" data-admin-tab-group="agenda-horarios" data-default-tab="padrao">
+      <nav class="admin-tabs-nav subtabs">
+        <button type="button" class="admin-tab-btn" data-admin-tab="padrao">Horário padrão</button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="semana">Semana completa</button>
+      </nav>
 
-      <div class="form-grid schedule-preset-times" id="presetTimes">
-        <label>Abertura
-          <input type="time" name="open_time" value="{{preset.open_time or '08:00'}}" step="300">
-        </label>
-        <label>Fechamento
-          <input type="time" name="close_time" value="{{preset.close_time or '18:00'}}" step="300">
-        </label>
-        <label>Início do almoço
-          <input type="time" name="lunch_start" value="{{preset.lunch_start or ''}}" step="300">
-        </label>
-        <label>Fim do almoço
-          <input type="time" name="lunch_end" value="{{preset.lunch_end or ''}}" step="300">
-        </label>
-      </div>
-      <p class="field-hint">No celular, toque no horário para abrir o seletor de hora do aparelho, parecido com o despertador.</p>
-      <button class="btn gold">Aplicar aos dias selecionados</button>
-    </form>
-  </section>
-
-  <section class="admin-section">
-    <div class="section-title-row">
-      <div>
-        <span class="eyebrow-small">AJUSTE FINO</span>
-        <h2>Semana completa</h2>
-        <p>Altere qualquer dia e salve a semana inteira com um único clique.</p>
-      </div>
-    </div>
-
-    {% set days=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'] %}
-    <form method="post" action="/admin/agenda/semana" class="weekly-schedule-form" id="weeklyScheduleForm">
-      <div class="weekly-schedule-list">
-        {% for h in hours %}
-        <article class="schedule-day-card {% if h.is_open %}is-open{% else %}is-closed{% endif %}" data-schedule-day>
-          <div class="schedule-day-head">
+      <div class="admin-tab-panel" data-admin-tab-panel="padrao">
+        <section class="admin-section" style="margin-top:0">
+          <div class="section-title-row"><div><span class="eyebrow-small">CONFIGURAÇÃO RÁPIDA</span><h2>Horário padrão</h2><p>Escolha os dias e aplique o mesmo horário de uma só vez.</p></div></div>
+          <form class="card form-stack schedule-preset-form" method="post" action="/admin/agenda/aplicar-padrao" id="schedulePresetForm">
             <div>
-              <strong>{{days[h.weekday]}}</strong>
-              <small data-day-status>{% if h.is_open %}Aberto{% else %}Fechado{% endif %}</small>
+              <label>Dias da semana</label>
+              <div class="schedule-day-actions">
+                <button type="button" class="btn text" data-days="0,1,2,3,4">Seg–Sex</button>
+                <button type="button" class="btn text" data-days="0,1,2,3,4,5">Seg–Sáb</button>
+                <button type="button" class="btn text" data-days="0,1,2,3,4,5,6">Todos</button>
+                <button type="button" class="btn text" data-days="">Limpar</button>
+              </div>
+              <div class="weekday-picker">
+                {% set short_days=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'] %}
+                {% for d in short_days %}<label class="weekday-chip"><input type="checkbox" name="weekdays" value="{{loop.index0}}"><span>{{d}}</span></label>{% endfor %}
+              </div>
             </div>
-            <label class="switch-control">
-              <input type="checkbox" name="is_open_{{h.weekday}}" value="1" {% if h.is_open %}checked{% endif %} data-open-toggle>
-              <span class="switch-track"><span></span></span>
-            </label>
-          </div>
-          <div class="schedule-day-times" data-time-fields>
-            <label>Abertura
-              <input type="time" name="open_time_{{h.weekday}}" value="{{h.open_time or ''}}" step="300">
-            </label>
-            <label>Fechamento
-              <input type="time" name="close_time_{{h.weekday}}" value="{{h.close_time or ''}}" step="300">
-            </label>
-            <label>Início almoço
-              <input type="time" name="lunch_start_{{h.weekday}}" value="{{h.lunch_start or ''}}" step="300">
-            </label>
-            <label>Fim almoço
-              <input type="time" name="lunch_end_{{h.weekday}}" value="{{h.lunch_end or ''}}" step="300">
-            </label>
-          </div>
-        </article>
-        {% endfor %}
+            <label>Aplicar como<select name="preset_state" id="presetState"><option value="open">Aberto</option><option value="closed">Fechado</option></select></label>
+            <div class="form-grid schedule-preset-times" id="presetTimes">
+              <label>Abertura<input type="time" name="open_time" value="{{preset.open_time or '08:00'}}" step="300"></label>
+              <label>Fechamento<input type="time" name="close_time" value="{{preset.close_time or '18:00'}}" step="300"></label>
+              <label>Início do almoço<input type="time" name="lunch_start" value="{{preset.lunch_start or ''}}" step="300"></label>
+              <label>Fim do almoço<input type="time" name="lunch_end" value="{{preset.lunch_end or ''}}" step="300"></label>
+            </div>
+            <p class="field-hint">No celular, toque no horário para abrir o seletor de hora do aparelho.</p>
+            <button class="btn gold">Aplicar aos dias selecionados</button>
+          </form>
+        </section>
       </div>
-      <div class="schedule-save-bar">
-        <span>Você pode alterar vários dias antes de salvar.</span>
-        <button class="btn gold">Salvar semana inteira</button>
-      </div>
-    </form>
-  </section>
-</div>
 
-<div class="admin-grid-2 schedule-lower-grid">
-  <section class="admin-section">
-    <h2>Capacidade</h2>
+      <div class="admin-tab-panel" data-admin-tab-panel="semana">
+        <section class="admin-section" style="margin-top:0">
+          <div class="section-title-row"><div><span class="eyebrow-small">AJUSTE FINO</span><h2>Semana completa</h2><p>Altere qualquer dia e salve a semana inteira com um único clique.</p></div></div>
+          {% set days=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'] %}
+          <form method="post" action="/admin/agenda/semana" class="weekly-schedule-form" id="weeklyScheduleForm">
+            <div class="weekly-schedule-list">
+              {% for h in hours %}
+              <article class="schedule-day-card {% if h.is_open %}is-open{% else %}is-closed{% endif %}" data-schedule-day>
+                <div class="schedule-day-head"><div><strong>{{days[h.weekday]}}</strong><small data-day-status>{% if h.is_open %}Aberto{% else %}Fechado{% endif %}</small></div><label class="switch-control"><input type="checkbox" name="is_open_{{h.weekday}}" value="1" {% if h.is_open %}checked{% endif %} data-open-toggle><span class="switch-track"><span></span></span></label></div>
+                <div class="schedule-day-times" data-time-fields>
+                  <label>Abertura<input type="time" name="open_time_{{h.weekday}}" value="{{h.open_time or ''}}" step="300"></label>
+                  <label>Fechamento<input type="time" name="close_time_{{h.weekday}}" value="{{h.close_time or ''}}" step="300"></label>
+                  <label>Início almoço<input type="time" name="lunch_start_{{h.weekday}}" value="{{h.lunch_start or ''}}" step="300"></label>
+                  <label>Fim almoço<input type="time" name="lunch_end_{{h.weekday}}" value="{{h.lunch_end or ''}}" step="300"></label>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+            <div class="schedule-save-bar"><span>Você pode alterar vários dias antes de salvar.</span><button class="btn gold">Salvar semana inteira</button></div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-tab-panel tab-panel-shell" data-admin-tab-panel="capacidade">
+    <div class="tab-panel-head"><div><span class="tab-kicker">ATENDIMENTO</span><h2>Capacidade</h2><p>Defina intervalo e quantidade de veículos atendidos ao mesmo tempo.</p></div></div>
     <form class="card form-stack" method="post" action="/admin/agenda/config">
-      <label>Intervalo entre veículos (min)
-        <input name="interval_minutes" type="number" min="0" value="{{interval}}">
-      </label>
-      <label>Quantidade de veículos simultâneos
-        <input name="simultaneous_capacity" type="number" min="1" value="{{capacity}}">
-      </label>
+      <label>Intervalo entre veículos (min)<input name="interval_minutes" type="number" min="0" value="{{interval}}"></label>
+      <label>Quantidade de veículos simultâneos<input name="simultaneous_capacity" type="number" min="1" value="{{capacity}}"></label>
       <button class="btn gold">Salvar configuração</button>
     </form>
-  </section>
+  </div>
 
-  <section class="admin-section">
-    <h2>Bloqueio manual</h2>
-    <p>Use o calendário para bloquear uma data inteira ou apenas um período.</p>
+  <div class="admin-tab-panel tab-panel-shell" data-admin-tab-panel="bloqueios">
+    <div class="tab-panel-head"><div><span class="tab-kicker">EXCEÇÕES</span><h2>Bloqueios</h2><p>Bloqueie uma data inteira ou apenas um período específico.</p></div></div>
     <form class="card form-stack" method="post" action="/admin/agenda/bloquear" id="blockScheduleForm">
-      <label>Data
-        <input type="date" name="block_date" id="blockDate" required>
-      </label>
-      <div class="schedule-date-shortcuts">
-        <button type="button" class="btn text" data-date-offset="0">Hoje</button>
-        <button type="button" class="btn text" data-date-offset="1">Amanhã</button>
-        <button type="button" class="btn text" data-date-offset="7">Daqui 7 dias</button>
-      </div>
-      <div class="form-grid">
-        <label>Início
-          <input type="time" name="start_time" step="300">
-        </label>
-        <label>Fim
-          <input type="time" name="end_time" step="300">
-        </label>
-      </div>
-      <label>Motivo
-        <input name="reason" placeholder="Ex.: compromisso, feriado, manutenção">
-      </label>
+      <label>Data<input type="date" name="block_date" id="blockDate" required></label>
+      <div class="schedule-date-shortcuts"><button type="button" class="btn text" data-date-offset="0">Hoje</button><button type="button" class="btn text" data-date-offset="1">Amanhã</button><button type="button" class="btn text" data-date-offset="7">Daqui 7 dias</button></div>
+      <div class="form-grid"><label>Início<input type="time" name="start_time" step="300"></label><label>Fim<input type="time" name="end_time" step="300"></label></div>
+      <label>Motivo<input name="reason" placeholder="Ex.: compromisso, feriado, manutenção"></label>
       <button class="btn ghost">Bloquear período</button>
     </form>
-
-    {% for b in blocks %}
-    <div class="mini-card row-card">
-      <div>
-        <b>{{fmt_date(b.block_date)}}</b>
-        <p>{{b.start_time or 'Dia inteiro'}} {{('– '+b.end_time) if b.end_time else ''}} · {{b.reason}}</p>
-      </div>
-      <form method="post" action="/admin/agenda/bloqueio/{{b.id}}/excluir"><button class="btn text">Remover</button></form>
+    <div class="settings-subsection">
+      <div class="settings-subsection-head"><div><h3>Bloqueios cadastrados</h3><p>Remova uma exceção quando voltar a disponibilizar aquele período.</p></div></div>
+      {% for b in blocks %}<div class="mini-card row-card"><div><b>{{fmt_date(b.block_date)}}</b><p>{{b.start_time or 'Dia inteiro'}} {{('– '+b.end_time) if b.end_time else ''}} · {{b.reason}}</p></div><form method="post" action="/admin/agenda/bloqueio/{{b.id}}/excluir"><button class="btn text">Remover</button></form></div>{% else %}<div class="notice">Nenhum bloqueio cadastrado.</div>{% endfor %}
     </div>
-    {% endfor %}
-  </section>
+  </div>
 </div>
 {% endblock %}
-
-{% block scripts %}
-<script src="/static/admin_schedule.js"></script>
-{% endblock %}
+{% block scripts %}<script src="/static/admin_schedule.js"></script>{% endblock %}

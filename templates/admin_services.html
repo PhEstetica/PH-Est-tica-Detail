@@ -1,65 +1,42 @@
 {% extends 'admin_base.html' %}
-{% block content %}
-<div class="admin-head"><div><span>CATÁLOGO</span><h1>Serviços e preços</h1><p>Os serviços principais e os adicionais ficam separados por categoria. Você também escolhe se o preço é fixo, <b>a partir de</b> ou <b>sob avaliação</b>.</p></div></div>
-<div class="notice gold-notice"><b>Como funciona para o cliente:</b> “A partir de” mostra um valor inicial e deixa claro que o preço pode mudar conforme o estado interno e externo do veículo. “Sob avaliação” não promete um valor antes da análise.</div>
-{% if request.query_params.get('extra_created') %}<div class="notice gold-notice">Adicional criado com sucesso.</div>{% endif %}
-{% if request.query_params.get('extra_deleted') %}<div class="notice gold-notice">Adicional excluído.</div>{% endif %}
-{% if request.query_params.get('extra_disabled') %}<div class="notice gold-notice">Esse adicional já possui histórico. Ele foi desativado para novos agendamentos, sem apagar os atendimentos antigos.</div>{% endif %}
-{% if request.query_params.get('saved') %}<div class="notice gold-notice">Alterações salvas.</div>{% endif %}
 
-<div class="admin-section"><h2>Serviços principais</h2><div class="stack">
-{% for s in services %}
-<form class="card service-edit" method="post" action="/admin/servicos/{{s.id}}">
-  <div><span class="pill">{% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %}</span><label>Nome<input name="name" value="{{s.name}}"></label></div>
+{% macro service_card(s) -%}
+<form class="card service-edit service-catalog-card" method="post" action="/admin/servicos/{{s.id}}">
+  <div class="service-card-head">
+    <span class="pill">{% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %}</span>
+    <label>Nome<input name="name" value="{{s.name}}"></label>
+  </div>
   <label>Descrição<textarea name="description">{{s.description}}</textarea></label>
-  <label>Preço base<input name="price" type="number" step="0.01" min="0" value="{{s.price}}"></label>
-  <label>Como mostrar o preço
-    <select name="price_mode">
-      <option value="from" {% if s.price_mode=='from' %}selected{% endif %}>A partir de</option>
-      <option value="fixed" {% if s.price_mode=='fixed' %}selected{% endif %}>Preço fixo</option>
-    </select>
-    <small>Ex.: “A partir de R$ 40,00” quando o estado do veículo pode exigir mais trabalho.</small>
-  </label>
-  <label>Duração (min)<input name="duration_minutes" type="number" min="1" value="{{s.duration_minutes or ''}}" placeholder="A definir"></label>
-  <label class="check inline"><input type="checkbox" name="active" value="1" {% if s.active %}checked{% endif %}><span>Ativo</span></label>
-  <button class="btn gold">Salvar</button>
+  <div class="form-grid compact-grid">
+    <label>Preço base<input name="price" type="number" step="0.01" min="0" value="{{s.price}}"></label>
+    <label>Como mostrar o preço
+      <select name="price_mode">
+        <option value="from" {% if s.price_mode=='from' %}selected{% endif %}>A partir de</option>
+        <option value="fixed" {% if s.price_mode=='fixed' %}selected{% endif %}>Preço fixo</option>
+      </select>
+    </label>
+    <label>Duração (min)<input name="duration_minutes" type="number" min="1" value="{{s.duration_minutes or ''}}" placeholder="A definir"></label>
+    <label class="check inline service-active-check"><input type="checkbox" name="active" value="1" {% if s.active %}checked{% endif %}><span>Ativo</span></label>
+  </div>
+  <small class="muted-help">“A partir de” é indicado quando o estado interno ou externo do veículo pode aumentar o trabalho necessário.</small>
+  <div class="actions"><button class="btn gold" type="submit">Salvar alterações</button></div>
 </form>
-{% endfor %}
-</div></div>
+{%- endmacro %}
 
-<div class="admin-section">
-  <div class="admin-head" style="margin-bottom:18px"><div><h2>Adicionais</h2><p>Cadastre extras específicos para moto, para todos os carros ou para um porte de carro.</p></div></div>
-  <form class="card form-stack" method="post" action="/admin/servicos/adicional/novo">
-    <h3>+ Novo adicional</h3>
-    <div class="form-grid">
-      <label>Nome<input name="name" required placeholder="Ex.: Lavagem técnica do motor"></label>
-      <label>Descrição<input name="description" placeholder="Explique rapidamente quando este adicional é indicado"></label>
-      <label>Preço base<input name="price" inputmode="decimal" placeholder="Ex.: 30,00"></label>
-      <label>Como mostrar o preço
-        <select name="price_mode">
-          <option value="from" selected>A partir de</option>
-          <option value="fixed">Preço fixo</option>
-          <option value="evaluation">Sob avaliação</option>
-        </select>
-      </label>
-      <label>Disponível para
-        <select name="category_code" required>
-          <option value="moto">Moto</option>
-          <option value="car">Todos os carros</option>
-          <option value="car_small">Carro pequeno/médio</option>
-          <option value="car_large">Carro grande</option>
-          <option value="all">Carro e moto</option>
-        </select>
-      </label>
-    </div>
-    <button class="btn gold" type="submit">Adicionar</button>
-  </form>
-
-  <div class="stack" style="margin-top:18px">
-  {% for e in extras %}
-  <form class="card extras-edit" method="post" action="/admin/extras/{{e.id}}">
+{% macro extra_card(e) -%}
+<form class="card extras-edit service-catalog-card" method="post" action="/admin/extras/{{e.id}}">
+  <div class="service-card-head">
+    <span class="pill">
+      {% if not e.category_code %}CARRO E MOTO
+      {% elif e.category_code=='moto' %}MOTO
+      {% elif e.category_code=='car' %}TODOS OS CARROS
+      {% elif e.category_code=='car_small' %}CARRO PEQ./MÉDIO
+      {% else %}CARRO GRANDE{% endif %}
+    </span>
     <label>Nome<input name="name" value="{{e.name}}" required></label>
-    <label>Descrição<textarea name="description" rows="2">{{e.description or ''}}</textarea></label>
+  </div>
+  <label>Descrição<textarea name="description" rows="2">{{e.description or ''}}</textarea></label>
+  <div class="form-grid compact-grid">
     <label>Preço base<input name="price" value="{{e.price if e.price is not none else ''}}" placeholder="A definir"></label>
     <label>Como mostrar o preço
       <select name="price_mode">
@@ -77,13 +54,114 @@
         <option value="car_large" {% if e.category_code=='car_large' %}selected{% endif %}>Carro grande</option>
       </select>
     </label>
-    <label class="check inline"><input type="checkbox" name="active" value="1" {% if e.active %}checked{% endif %}><span>Ativo</span></label>
-    <div class="actions" style="margin-top:0">
-      <button class="btn ghost" type="submit">Salvar</button>
-      <button class="btn danger" type="submit" formaction="/admin/extras/{{e.id}}/excluir" formmethod="post" onclick="return confirm('Remover este adicional? Se ele já foi usado em atendimentos antigos, será apenas desativado para preservar o histórico.');">Remover</button>
-    </div>
-  </form>
-  {% endfor %}
+    <label class="check inline service-active-check"><input type="checkbox" name="active" value="1" {% if e.active %}checked{% endif %}><span>Ativo</span></label>
   </div>
+  <div class="actions">
+    <button class="btn gold" type="submit">Salvar</button>
+    <button class="btn danger" type="submit" formaction="/admin/extras/{{e.id}}/excluir" formmethod="post" onclick="return confirm('Remover este adicional? Se ele já foi usado em atendimentos antigos, será apenas desativado para preservar o histórico.');">Remover</button>
+  </div>
+</form>
+{%- endmacro %}
+
+{% macro new_extra_form(kind) -%}
+<form class="card form-stack new-extra-card" method="post" action="/admin/servicos/adicional/novo">
+  <div class="new-extra-head">
+    <div><span class="pill">NOVO</span><h3>Adicionar serviço para {% if kind=='moto' %}moto{% else %}carro{% endif %}</h3></div>
+  </div>
+  <div class="form-grid">
+    <label>Nome<input name="name" required placeholder="{% if kind=='moto' %}Ex.: Lavagem técnica do motor{% else %}Ex.: Remoção de chuva ácida{% endif %}"></label>
+    <label>Descrição<input name="description" placeholder="Explique rapidamente quando este adicional é indicado"></label>
+    <label>Preço base<input name="price" inputmode="decimal" placeholder="Ex.: 30,00"></label>
+    <label>Como mostrar o preço
+      <select name="price_mode">
+        <option value="from" selected>A partir de</option>
+        <option value="fixed">Preço fixo</option>
+        <option value="evaluation">Sob avaliação</option>
+      </select>
+    </label>
+    <label>Disponível para
+      <select name="category_code" required>
+        {% if kind=='moto' %}
+          <option value="moto" selected>Moto</option>
+          <option value="all">Carro e moto</option>
+        {% else %}
+          <option value="car" selected>Todos os carros</option>
+          <option value="car_small">Carro pequeno/médio</option>
+          <option value="car_large">Carro grande</option>
+          <option value="all">Carro e moto</option>
+        {% endif %}
+      </select>
+    </label>
+  </div>
+  <div class="actions"><button class="btn gold" type="submit">Adicionar serviço</button></div>
+</form>
+{%- endmacro %}
+
+{% block content %}
+<div class="admin-head"><div><span>CATÁLOGO</span><h1>Serviços e preços</h1><p>Agora o catálogo está dividido em abas e subabas. Primeiro escolha o que quer editar e depois selecione <b>Moto</b> ou <b>Carro</b>.</p></div></div>
+<div class="notice gold-notice"><b>Para o cliente:</b> “A partir de” mostra um valor inicial e deixa claro que o preço pode mudar conforme o estado interno e externo do veículo. “Sob avaliação” não promete um valor antes da análise.</div>
+{% if request.query_params.get('extra_created') %}<div class="notice gold-notice">Adicional criado com sucesso.</div>{% endif %}
+{% if request.query_params.get('extra_deleted') %}<div class="notice gold-notice">Adicional excluído.</div>{% endif %}
+{% if request.query_params.get('extra_disabled') %}<div class="notice gold-notice">Esse adicional já possui histórico. Ele foi desativado para novos agendamentos, sem apagar os atendimentos antigos.</div>{% endif %}
+{% if request.query_params.get('saved') %}<div class="notice gold-notice">Alterações salvas.</div>{% endif %}
+
+<div class="service-tabs-shell" data-service-tabs>
+  <nav class="service-main-tabs" aria-label="Seções de serviços">
+    <button type="button" class="service-main-tab active" data-service-main-tab="precos">Preços e serviços</button>
+    <button type="button" class="service-main-tab" data-service-main-tab="adicionais">Serviços adicionais</button>
+  </nav>
+
+  <section class="service-main-panel active" data-service-main-panel="precos">
+    <div class="service-panel-intro">
+      <div><span>PREÇOS PRINCIPAIS</span><h2>Escolha o tipo de veículo</h2><p>Edite nome, descrição, preço, duração e forma de exibição sem misturar motos e carros na mesma tela.</p></div>
+    </div>
+    <nav class="service-sub-tabs" data-service-sub-tabs="precos" aria-label="Tipo de veículo nos preços">
+      <button type="button" class="service-sub-tab active" data-service-sub-tab="moto">🏍️ Moto</button>
+      <button type="button" class="service-sub-tab" data-service-sub-tab="carro">🚗 Carro</button>
+    </nav>
+
+    <div class="service-sub-panel active" data-service-sub-panel="precos:moto">
+      <div class="stack service-edit-stack">
+        {% for s in services %}{% if s.category_code=='moto' %}{{ service_card(s) }}{% endif %}{% endfor %}
+      </div>
+    </div>
+
+    <div class="service-sub-panel" data-service-sub-panel="precos:carro">
+      <div class="notice service-group-note"><b>Carros:</b> aqui ficam juntos os serviços de carro pequeno/médio e carro grande, cada um identificado pela etiqueta.</div>
+      <div class="stack service-edit-stack">
+        {% for s in services %}{% if s.category_code!='moto' %}{{ service_card(s) }}{% endif %}{% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="service-main-panel" data-service-main-panel="adicionais">
+    <div class="service-panel-intro">
+      <div><span>EXTRAS E TRATAMENTOS</span><h2>Serviços adicionais</h2><p>Abra Moto ou Carro para ver somente os adicionais daquele tipo e editar tudo com menos rolagem.</p></div>
+    </div>
+    <nav class="service-sub-tabs" data-service-sub-tabs="adicionais" aria-label="Tipo de veículo nos adicionais">
+      <button type="button" class="service-sub-tab active" data-service-sub-tab="moto">🏍️ Moto</button>
+      <button type="button" class="service-sub-tab" data-service-sub-tab="carro">🚗 Carro</button>
+    </nav>
+
+    <div class="service-sub-panel active" data-service-sub-panel="adicionais:moto">
+      {{ new_extra_form('moto') }}
+      <div class="service-list-heading"><h3>Adicionais cadastrados para moto</h3><p>Itens marcados como “Carro e moto” também aparecem aqui.</p></div>
+      <div class="stack service-edit-stack">
+        {% for e in extras %}{% if e.category_code=='moto' or not e.category_code %}{{ extra_card(e) }}{% endif %}{% endfor %}
+      </div>
+    </div>
+
+    <div class="service-sub-panel" data-service-sub-panel="adicionais:carro">
+      {{ new_extra_form('carro') }}
+      <div class="service-list-heading"><h3>Adicionais cadastrados para carro</h3><p>Inclui todos os carros, pequeno/médio, grande e itens marcados como “Carro e moto”.</p></div>
+      <div class="stack service-edit-stack">
+        {% for e in extras %}{% if e.category_code!='moto' %}{{ extra_card(e) }}{% endif %}{% endfor %}
+      </div>
+    </div>
+  </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/admin_services_tabs.js"></script>
 {% endblock %}
