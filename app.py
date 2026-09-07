@@ -3063,7 +3063,7 @@ def admin_settings_save(request: Request, whatsapp_number: str = Form(""), home_
         for k,v in values.items():
             conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)", (k,v))
         conn.commit()
-    return RedirectResponse("/admin/configuracoes?saved=1", 303)
+    return RedirectResponse("/admin/configuracoes?saved=1#identidade", 303)
 
 
 @app.post("/admin/configuracoes/mensagens-whatsapp")
@@ -3122,7 +3122,7 @@ async def admin_logo_upload(request: Request, logo: UploadFile = File(...)):
     if old:
         try: (UPLOAD_DIR / old).unlink(missing_ok=True)
         except OSError: pass
-    return RedirectResponse("/admin/configuracoes?logo=1", 303)
+    return RedirectResponse("/admin/configuracoes?logo=1#logo", 303)
 
 
 @app.post("/admin/configuracoes/imagem-home/{slot}")
@@ -3142,7 +3142,7 @@ async def admin_home_image_upload(request: Request, slot: str, photo: UploadFile
             (UPLOAD_DIR / old_value.split("/uploads/",1)[1]).unlink(missing_ok=True)
         except OSError:
             pass
-    return RedirectResponse(f"/admin/configuracoes?image={slot}", 303)
+    return RedirectResponse(f"/admin/configuracoes?image={slot}#imagens-home", 303)
 
 
 @app.post("/admin/configuracoes/imagem-home/{slot}/restaurar")
@@ -3160,7 +3160,7 @@ def admin_home_image_reset(request: Request, slot: str):
             (UPLOAD_DIR / old_value.split("/uploads/",1)[1]).unlink(missing_ok=True)
         except OSError:
             pass
-    return RedirectResponse(f"/admin/configuracoes?image_reset={slot}", 303)
+    return RedirectResponse(f"/admin/configuracoes?image_reset={slot}#imagens-home", 303)
 
 
 @app.get("/admin/backup")

@@ -1,22 +1,164 @@
-{% extends 'admin_base.html' %}{% block content %}<div class="admin-head"><div><span>CONFIGURAÇÕES DA EMPRESA</span><h1>Central de ajustes</h1><p>Altere textos, WhatsApp, políticas, identidade e imagens da home sem mexer no código.</p></div></div>
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head settings-head">
+  <div>
+    <span>CONFIGURAÇÕES DA EMPRESA</span>
+    <h1>Central de ajustes</h1>
+    <p>Altere textos, WhatsApp, políticas, identidade, imagens e backups sem mexer no código.</p>
+  </div>
+</div>
+
 {% if request.query_params.get('saved') %}<div class="notice gold-notice">Configurações salvas.</div>{% endif %}
 {% if request.query_params.get('image') %}<div class="notice gold-notice">Imagem da página inicial atualizada.</div>{% endif %}
 {% if request.query_params.get('image_reset') %}<div class="notice gold-notice">Imagem ilustrativa padrão restaurada.</div>{% endif %}
 {% if request.query_params.get('wa_messages') %}<div class="notice gold-notice">Mensagens do WhatsApp salvas.</div>{% endif %}
 {% if request.query_params.get('wa_messages_reset') %}<div class="notice gold-notice">Mensagens padrão do WhatsApp restauradas.</div>{% endif %}
-{% if request.query_params.get('restored') %}<div class="notice gold-notice"><b>Backup restaurado com sucesso.</b> O banco ativo já foi substituído e atualizado para esta versão.</div>{% endif %}
-{% if request.query_params.get('restore_error') %}<div class="notice"><b>Não foi possível restaurar o backup.</b> {{ request.query_params.get('restore_error') }}</div>{% endif %}
-<section class="admin-section"><h2>Identidade e contato</h2><form class="form-grid" method="post" action="/admin/configuracoes"><label>WhatsApp<input name="whatsapp_number" value="{{settings.whatsapp_number}}" placeholder="5538999999999"></label><label>Instagram (opcional)<input name="instagram" value="{{settings.instagram}}" placeholder="@perfil"></label><label class="full">Texto pequeno acima do título<input name="home_eyebrow" value="{{settings.home_eyebrow}}"></label><label class="full">Título principal da home<input name="home_headline" value="{{settings.home_headline}}"></label><label class="full">Subtítulo da home<textarea name="home_subtitle">{{settings.home_subtitle}}</textarea></label><label class="full">Título da galeria<input name="home_gallery_title" value="{{settings.home_gallery_title}}"></label><label>Prazo mínimo para cancelar (horas)<input type="number" min="0" name="cancel_min_hours" value="{{settings.cancel_min_hours}}"></label><label>Prazo mínimo para remarcar (horas)<input type="number" min="0" name="reschedule_min_hours" value="{{settings.reschedule_min_hours}}"></label><label>Guardar backups por quantos dias<input type="number" min="7" name="backup_retention_days" value="{{settings.backup_retention_days}}"></label><div class="full"><button class="btn gold">Salvar configurações</button></div></form></section>
-<section class="admin-section" id="mensagens-whatsapp"><h2>Mensagens do WhatsApp</h2><p>Edite as mensagens que abrem prontas no WhatsApp quando você acompanha o status do atendimento. O envio continua manual: o sistema abre a conversa e você confirma o envio.</p><div class="notice"><b>Campos automáticos disponíveis:</b> <code>{cliente}</code> <code>{veiculo}</code> <code>{servico}</code> <code>{agendamento}</code> <code>{valor}</code> <code>{data}</code> <code>{horario}</code> <code>{forma_pagamento}</code> <code>{status_pagamento}</code> <code>{empresa}</code></div><form class="form-stack whatsapp-template-form" method="post" action="/admin/configuracoes/mensagens-whatsapp"><div class="form-grid"><label class="full">Agendamento confirmado<textarea name="wa_msg_scheduled" maxlength="1200">{{settings.wa_msg_scheduled}}</textarea></label><label class="full">Veículo recebido<textarea name="wa_msg_received" maxlength="1200">{{settings.wa_msg_received}}</textarea></label><label class="full">Preparação<textarea name="wa_msg_preparation" maxlength="1200">{{settings.wa_msg_preparation}}</textarea></label><label class="full">Lavagem iniciada<textarea name="wa_msg_washing" maxlength="1200">{{settings.wa_msg_washing}}</textarea></label><label class="full">Detalhamento<textarea name="wa_msg_detailing" maxlength="1200">{{settings.wa_msg_detailing}}</textarea></label><label class="full">Finalização<textarea name="wa_msg_finishing" maxlength="1200">{{settings.wa_msg_finishing}}</textarea></label><label class="full">Inspeção final<textarea name="wa_msg_inspection" maxlength="1200">{{settings.wa_msg_inspection}}</textarea></label><label class="full">Pronto para retirada<textarea name="wa_msg_ready" maxlength="1200">{{settings.wa_msg_ready}}</textarea><small>Exemplo: Olá, {cliente}! ✨ Seu {veiculo} está pronto para retirada na PH ESTÉTICA & DETAIL. Agradecemos pela confiança!</small></label><label class="full">Atendimento finalizado<textarea name="wa_msg_completed" maxlength="1200">{{settings.wa_msg_completed}}</textarea></label><label class="full">Agendamento cancelado<textarea name="wa_msg_cancelled" maxlength="1200">{{settings.wa_msg_cancelled}}</textarea></label><label class="full">Cobrança / lembrete de pagamento pendente<textarea name="wa_msg_payment_pending" maxlength="1200">{{settings.wa_msg_payment_pending}}</textarea><small>Usada para PIX, dinheiro, cartão ou qualquer outra forma de pagamento. A mensagem informa automaticamente a forma escolhida e o valor.</small></label></div><div class="actions"><button class="btn gold" type="submit">Salvar mensagens</button></div></form><form method="post" action="/admin/configuracoes/mensagens-whatsapp/restaurar" onsubmit="return confirm('Restaurar todas as mensagens padrão do WhatsApp?');"><button class="btn ghost compact" type="submit">Restaurar mensagens padrão</button></form></section>
-<section class="admin-section"><h2>Imagens da página inicial</h2><p>As imagens atuais são ilustrativas. Quando tiver fotos reais da PH, envie aqui e o site troca imediatamente. Você pode restaurar a imagem genérica a qualquer momento.</p><div class="home-image-admin-grid">
-{% set slots=[('hero','Banner principal',settings.home_hero_image_url),('car','Seção de carros',settings.home_car_image_url),('moto','Seção de motos',settings.home_moto_image_url),('detail','Detalhe automotivo',settings.home_detail_image_url),('moto_detail','Detalhe de moto',settings.home_moto_detail_image_url)] %}
-{% for code,label,url in slots %}<article class="card home-image-admin-card"><img src="{{url}}" alt="{{label}}"><h3>{{label}}</h3><form class="form-stack" method="post" action="/admin/configuracoes/imagem-home/{{code}}" enctype="multipart/form-data"><label>Substituir imagem<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label><button class="btn gold compact">Enviar nova imagem</button></form><form method="post" action="/admin/configuracoes/imagem-home/{{code}}/restaurar"><button class="btn ghost compact">Restaurar imagem ilustrativa</button></form></article>{% endfor %}
-</div></section>
-<section class="admin-section"><h2>Logo usada no cabeçalho</h2><p>Você pode manter a identidade especial do site ou subir uma logo própria em PNG/JPG/WEBP.</p><div class="logo-settings-preview"><img src="{{brand_logo_url}}"></div><form class="inline-form" method="post" action="/admin/configuracoes/logo" enctype="multipart/form-data"><label>Nova logo<input type="file" name="logo" accept="image/*" required></label><button class="btn gold">Enviar logo</button></form></section>
-<section class="admin-section" id="backups"><h2>Backup e armazenamento</h2><p>Proteja clientes, agendamentos, financeiro, configurações e fotos antes de qualquer alteração no Render.</p>
-<div class="notice gold-notice"><b>Armazenamento atual:</b> {% if storage_info.persistent %}✅ Persistent Disk ativo em <code>{{storage_info.data_dir}}</code>{% else %}⚠️ armazenamento local/temporário em <code>{{storage_info.data_dir}}</code>{% endif %}<br><small>Banco: <code>{{storage_info.db_path}}</code> · Fotos: <code>{{storage_info.upload_dir}}</code></small></div>
-<div class="actions" style="margin:16px 0 20px;gap:10px;flex-wrap:wrap"><a class="btn gold" href="/admin/backup" download>⬇ Baixar somente banco (.db)</a><a class="btn ghost" href="/admin/backup/completo" download>⬇ Baixar backup completo (.zip)</a></div>
-<p><b>Backup completo</b> inclui o banco e também as fotos/uploads existentes. É o recomendado antes de ativar o Persistent Disk.</p>
-<h3>Restaurar backup neste servidor</h3><div class="notice"><b>Atenção:</b> a restauração substitui o banco ativo. Antes disso, o sistema cria automaticamente uma cópia de segurança do banco atual.</div>
-<form class="form-stack" method="post" action="/admin/backup/restaurar" enctype="multipart/form-data" onsubmit="return confirm('Restaurar este backup? O banco atual será substituído, mas uma cópia de segurança será criada automaticamente.');"><label>Arquivo de backup (.db ou .zip)<input type="file" name="backup" accept=".db,.zip,application/x-sqlite3,application/zip" required></label><div class="actions"><button class="btn gold" type="submit">Restaurar backup</button></div></form>
-<h3 style="margin-top:24px">Backups disponíveis</h3><div class="stack">{% for b in backups %}<div class="mini-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>{{b.name}}</b></div><a class="btn ghost compact" href="/admin/backup/arquivo/{{b.name}}" download>Baixar</a></div>{% else %}<div class="notice">Ainda não existe backup salvo. Baixe um backup para gerar o primeiro.</div>{% endfor %}</div></section>{% endblock %}
+{% if request.query_params.get('restored') %}<div class="notice gold-notice"><b>Backup restaurado com sucesso.</b> O banco ativo foi substituído e atualizado para esta versão.</div>{% endif %}
+{% if request.query_params.get('restore_error') %}<div class="notice error"><b>Não foi possível restaurar o backup.</b> {{ request.query_params.get('restore_error') }}</div>{% endif %}
+
+<div class="settings-tabs-shell" data-settings-tabs>
+  <nav class="settings-tabs" aria-label="Áreas das configurações">
+    <a class="settings-tab" href="#identidade" data-settings-tab="identidade">Identidade e contato</a>
+    <a class="settings-tab" href="#mensagens-whatsapp" data-settings-tab="mensagens-whatsapp">Mensagens do WhatsApp</a>
+    <a class="settings-tab" href="#imagens-home" data-settings-tab="imagens-home">Imagens da página inicial</a>
+    <a class="settings-tab" href="#logo" data-settings-tab="logo">Logo do cabeçalho</a>
+    <a class="settings-tab" href="#backups" data-settings-tab="backups">Backups</a>
+  </nav>
+
+  <section class="admin-section settings-panel" id="identidade" data-settings-panel="identidade">
+    <div class="settings-panel-head">
+      <div><span>EMPRESA</span><h2>Identidade e contato</h2><p>Dados de contato, textos principais da home e regras gerais do atendimento.</p></div>
+    </div>
+    <form class="form-grid" method="post" action="/admin/configuracoes">
+      <label>WhatsApp<input name="whatsapp_number" value="{{settings.whatsapp_number}}" placeholder="5538999999999"></label>
+      <label>Instagram (opcional)<input name="instagram" value="{{settings.instagram}}" placeholder="@perfil"></label>
+      <label class="full">Texto pequeno acima do título<input name="home_eyebrow" value="{{settings.home_eyebrow}}"></label>
+      <label class="full">Título principal da home<input name="home_headline" value="{{settings.home_headline}}"></label>
+      <label class="full">Subtítulo da home<textarea name="home_subtitle">{{settings.home_subtitle}}</textarea></label>
+      <label class="full">Título da galeria<input name="home_gallery_title" value="{{settings.home_gallery_title}}"></label>
+      <label>Prazo mínimo para cancelar (horas)<input type="number" min="0" name="cancel_min_hours" value="{{settings.cancel_min_hours}}"></label>
+      <label>Prazo mínimo para remarcar (horas)<input type="number" min="0" name="reschedule_min_hours" value="{{settings.reschedule_min_hours}}"></label>
+      <label>Guardar backups por quantos dias<input type="number" min="7" name="backup_retention_days" value="{{settings.backup_retention_days}}"></label>
+      <div class="full"><button class="btn gold" type="submit">Salvar identidade e regras</button></div>
+    </form>
+  </section>
+
+  <section class="admin-section settings-panel" id="mensagens-whatsapp" data-settings-panel="mensagens-whatsapp">
+    <div class="settings-panel-head">
+      <div><span>ATENDIMENTO</span><h2>Mensagens do WhatsApp</h2><p>Edite as mensagens que abrem prontas no WhatsApp quando você acompanha o status do atendimento.</p></div>
+    </div>
+    <div class="notice"><b>O envio continua manual.</b> O sistema abre a conversa e você confirma o envio.</div>
+    <div class="notice"><b>Campos automáticos disponíveis:</b> <code>{cliente}</code> <code>{veiculo}</code> <code>{servico}</code> <code>{agendamento}</code> <code>{valor}</code> <code>{data}</code> <code>{horario}</code> <code>{forma_pagamento}</code> <code>{status_pagamento}</code> <code>{empresa}</code></div>
+    <form class="form-stack whatsapp-template-form" method="post" action="/admin/configuracoes/mensagens-whatsapp">
+      <div class="form-grid">
+        <label class="full">Agendamento confirmado<textarea name="wa_msg_scheduled" maxlength="1200">{{settings.wa_msg_scheduled}}</textarea></label>
+        <label class="full">Veículo recebido<textarea name="wa_msg_received" maxlength="1200">{{settings.wa_msg_received}}</textarea></label>
+        <label class="full">Preparação<textarea name="wa_msg_preparation" maxlength="1200">{{settings.wa_msg_preparation}}</textarea></label>
+        <label class="full">Lavagem iniciada<textarea name="wa_msg_washing" maxlength="1200">{{settings.wa_msg_washing}}</textarea></label>
+        <label class="full">Detalhamento<textarea name="wa_msg_detailing" maxlength="1200">{{settings.wa_msg_detailing}}</textarea></label>
+        <label class="full">Finalização<textarea name="wa_msg_finishing" maxlength="1200">{{settings.wa_msg_finishing}}</textarea></label>
+        <label class="full">Inspeção final<textarea name="wa_msg_inspection" maxlength="1200">{{settings.wa_msg_inspection}}</textarea></label>
+        <label class="full">Pronto para retirada<textarea name="wa_msg_ready" maxlength="1200">{{settings.wa_msg_ready}}</textarea><small>Exemplo: Olá, {cliente}! ✨ O veículo {veiculo} está pronto para retirada na PH ESTÉTICA & DETAIL.</small></label>
+        <label class="full">Atendimento finalizado<textarea name="wa_msg_completed" maxlength="1200">{{settings.wa_msg_completed}}</textarea></label>
+        <label class="full">Agendamento cancelado<textarea name="wa_msg_cancelled" maxlength="1200">{{settings.wa_msg_cancelled}}</textarea></label>
+        <label class="full">Cobrança / lembrete de pagamento pendente<textarea name="wa_msg_payment_pending" maxlength="1200">{{settings.wa_msg_payment_pending}}</textarea><small>Usada para PIX, dinheiro, cartão ou qualquer outra forma de pagamento.</small></label>
+      </div>
+      <div class="actions"><button class="btn gold" type="submit">Salvar mensagens</button></div>
+    </form>
+    <form method="post" action="/admin/configuracoes/mensagens-whatsapp/restaurar" onsubmit="return confirm('Restaurar todas as mensagens padrão do WhatsApp?');">
+      <button class="btn ghost compact" type="submit">Restaurar mensagens padrão</button>
+    </form>
+  </section>
+
+  <section class="admin-section settings-panel" id="imagens-home" data-settings-panel="imagens-home">
+    <div class="settings-panel-head">
+      <div><span>APARÊNCIA</span><h2>Imagens da página inicial</h2><p>Troque as imagens ilustrativas por fotos reais da PH quando quiser.</p></div>
+    </div>
+    <div class="home-image-admin-grid">
+      {% set slots=[('hero','Banner principal',settings.home_hero_image_url),('car','Seção de carros',settings.home_car_image_url),('moto','Seção de motos',settings.home_moto_image_url),('detail','Detalhe automotivo',settings.home_detail_image_url),('moto_detail','Detalhe de moto',settings.home_moto_detail_image_url)] %}
+      {% for code,label,url in slots %}
+      <article class="card home-image-admin-card">
+        <img src="{{url}}" alt="{{label}}">
+        <h3>{{label}}</h3>
+        <form class="form-stack" method="post" action="/admin/configuracoes/imagem-home/{{code}}" enctype="multipart/form-data">
+          <label>Substituir imagem<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>
+          <button class="btn gold compact" type="submit">Enviar nova imagem</button>
+        </form>
+        <form method="post" action="/admin/configuracoes/imagem-home/{{code}}/restaurar">
+          <button class="btn ghost compact" type="submit">Restaurar imagem ilustrativa</button>
+        </form>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="admin-section settings-panel" id="logo" data-settings-panel="logo">
+    <div class="settings-panel-head">
+      <div><span>MARCA</span><h2>Logo usada no cabeçalho</h2><p>Mantenha a identidade atual ou envie uma nova logo em PNG, JPG ou WEBP.</p></div>
+    </div>
+    <div class="logo-settings-preview"><img src="{{brand_logo_url}}" alt="Logo atual"></div>
+    <form class="inline-form" method="post" action="/admin/configuracoes/logo" enctype="multipart/form-data">
+      <label>Nova logo<input type="file" name="logo" accept="image/*" required></label>
+      <button class="btn gold" type="submit">Enviar logo</button>
+    </form>
+  </section>
+
+  <section class="admin-section settings-panel" id="backups" data-settings-panel="backups">
+    <div class="settings-panel-head">
+      <div><span>SEGURANÇA DOS DADOS</span><h2>Backups</h2><p>Baixe cópias de segurança e restaure o sistema quando precisar.</p></div>
+    </div>
+
+    <div class="storage-status {% if storage_info.persistent %}is-persistent{% else %}is-temporary{% endif %}">
+      <div class="storage-status-icon">{% if storage_info.persistent %}✓{% else %}!{% endif %}</div>
+      <div>
+        <b>{% if storage_info.persistent %}Persistent Disk ativo{% else %}Armazenamento temporário{% endif %}</b>
+        <p>{% if storage_info.persistent %}Os dados estão sendo gravados em <code>{{storage_info.data_dir}}</code>.{% else %}Os dados estão em <code>{{storage_info.data_dir}}</code> e podem ser perdidos em reinícios/deploys.{% endif %}</p>
+        <small>Banco: <code>{{storage_info.db_path}}</code> · Fotos: <code>{{storage_info.upload_dir}}</code></small>
+      </div>
+    </div>
+
+    <div class="backup-action-grid">
+      <article class="backup-action-card">
+        <span class="backup-kicker">BAIXAR</span>
+        <h3>Salvar uma cópia no computador</h3>
+        <p>Baixe o banco sozinho ou um ZIP completo com banco e fotos.</p>
+        <div class="actions">
+          <a class="btn gold" href="/admin/backup" download>Baixar banco (.db)</a>
+          <a class="btn ghost" href="/admin/backup/completo" download>Backup completo (.zip)</a>
+        </div>
+      </article>
+
+      <article class="backup-action-card restore-card">
+        <span class="backup-kicker">RESTAURAR</span>
+        <h3>Recuperar dados de um backup</h3>
+        <p>Selecione um arquivo <b>.db</b> ou <b>.zip</b>. O sistema cria uma cópia de segurança do banco atual antes de substituir os dados.</p>
+        <form class="form-stack restore-backup-form" method="post" action="/admin/backup/restaurar" enctype="multipart/form-data" onsubmit="return confirm('Restaurar este backup? O banco atual será substituído, mas uma cópia de segurança será criada automaticamente.');">
+          <label>Arquivo de backup
+            <input type="file" name="backup" accept=".db,.zip,application/x-sqlite3,application/zip" required>
+          </label>
+          <button class="btn gold" type="submit">Restaurar backup agora</button>
+        </form>
+        <div class="notice"><b>Atenção:</b> use a restauração somente com um backup da PH ESTÉTICA. Durante o processo, evite cadastrar novos dados.</div>
+      </article>
+    </div>
+
+    <div class="settings-subsection">
+      <div class="settings-subsection-head"><div><h3>Backups disponíveis no servidor</h3><p>Cópias recentes geradas automaticamente ou manualmente.</p></div></div>
+      <div class="stack">
+        {% for b in backups %}
+        <div class="mini-card backup-file-row">
+          <div><b>{{b.name}}</b></div>
+          <a class="btn ghost compact" href="/admin/backup/arquivo/{{b.name}}" download>Baixar</a>
+        </div>
+        {% else %}
+        <div class="notice">Ainda não existe backup salvo no servidor. Use um dos botões acima para gerar o primeiro.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/admin_settings_tabs.js"></script>
+{% endblock %}

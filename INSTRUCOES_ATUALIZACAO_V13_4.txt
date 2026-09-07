@@ -1,0 +1,37 @@
+PH ESTÉTICA & DETAIL — ATUALIZAÇÃO V13.4
+CONFIGURAÇÕES POR ABAS + BACKUP/RESTAURAÇÃO
+
+O QUE MUDA
+- Configurações separadas em 5 abas:
+  1. Identidade e contato
+  2. Mensagens do WhatsApp
+  3. Imagens da página inicial
+  4. Logo do cabeçalho
+  5. Backups
+- A aba Backups agora mostra claramente:
+  - baixar banco .db;
+  - baixar backup completo .zip;
+  - restaurar backup .db ou .zip;
+  - status do Persistent Disk;
+  - backups disponíveis no servidor.
+- Ao salvar uma seção, o sistema volta para a aba correta.
+- Layout adaptado para PC e celular.
+
+ATUALIZAÇÃO PELO GITHUB / RENDER
+1. Você já deve ter um backup .db salvo no PC.
+2. Envie estes arquivos para o repositório, mantendo as mesmas pastas:
+   - app.py
+   - templates/admin_settings.html
+   - static/style.css
+   - static/admin_settings_tabs.js
+3. Confirme o commit no GitHub.
+4. No Render: Manual Deploy -> Deploy latest commit.
+5. Aguarde aparecer Live.
+6. Entre em Admin -> Configurações -> aba Backups.
+7. Confira se aparece "Persistent Disk ativo" antes de restaurar o backup.
+8. Em Restaurar backup, selecione o .db ou .zip e confirme.
+
+IMPORTANTE
+- Não substitua nem envie o seu ph_estetica.db pelo GitHub.
+- A restauração cria uma cópia de segurança do banco ativo antes de substituir os dados.
+- Se o Persistent Disk estiver montado em /var/data, banco, uploads e backups ficam persistentes.
