@@ -30,9 +30,10 @@
 
 <section class="shell section" id="servicos">
   <div class="section-head"><span>SERVIÇOS</span><h2>Escolha o cuidado certo para o seu veículo.</h2><p>Os preços abaixo vêm do painel administrativo e mudam conforme a categoria do veículo.</p></div>
+  <div class="notice gold-notice pricing-evaluation-notice"><b>Valores transparentes:</b> quando aparecer “A partir de”, o valor é inicial e pode variar conforme o estado interno e externo, nível de sujeira e tempo necessário. O valor final é confirmado após avaliação.</div>
   <div class="grid-3">
     {% for s in home_services %}
-    <article class="card service-home-card"><span class="pill">{% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %}</span><h3>{{s.name}}</h3><p>{{s.description}}</p><strong class="home-price">{{brl(s.price)}}</strong><a class="btn ghost" href="/agendar">Escolher</a></article>
+    <article class="card service-home-card"><span class="pill">{% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %}</span><h3>{{s.name}}</h3><p>{{s.description}}</p><strong class="home-price">{{price_display(s.price, s.price_mode)}}</strong><a class="btn ghost" href="/agendar">Escolher</a></article>
     {% endfor %}
   </div>
 </section>
