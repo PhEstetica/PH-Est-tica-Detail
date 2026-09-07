@@ -1,32 +1,34 @@
-PH ESTÉTICA & DETAIL — V13.9 — PAINEL ORGANIZADO EM ABAS E SUBABAS
+PH ESTÉTICA & DETAIL — V14 | NOVA HOME PREMIUM
 
-O que mudou:
-- Serviços e preços mantém: Preços e serviços > Moto/Carro; Serviços adicionais > Moto/Carro.
-- Configurações ganhou subabas dentro das abas principais:
-  * Identidade e contato > Contato / Textos da home / Regras
-  * Mensagens do WhatsApp > Início / Finalização / Cobrança
-  * Imagens da home > Banner / Carros / Motos
-  * Backups > Baixar / Restaurar / No servidor
-- Agenda > Horários / Capacidade / Bloqueios; dentro de Horários: Horário padrão / Semana completa.
-- Perguntas do veículo > Perguntas cadastradas / Nova pergunta; cadastradas separadas em Moto / Carro / Carro e moto.
-- Financeiro mantém as abas principais e ganhou subabas internas em Visão Geral, Receitas, Despesas, Ajudantes, Investimentos, Aportes e Fechamento.
-- Detalhe do atendimento > Atendimento / Financeiro / Check-in / Fotos / Avaliação, com novas subabas internas.
-- Galeria > Fotos cadastradas / Adicionar foto.
-- Promoções > Promoções cadastradas / Nova promoção.
-- Avaliações > Todas / Autorizadas para home / Não públicas.
-- Marcas e modelos já possuía separação Carros / Motos e foi mantida.
-- Páginas simples (Clientes, Hoje, Kanban, Lembretes, Boxes etc.) não receberam abas artificiais, porque já têm uma única função.
-- As abas lembram a última posição usada em cada página.
-- Layout adaptado para PC e celular.
+O que muda:
+- Cabeçalho público premium com logo maior e mais legível.
+- Nome PH ESTÉTICA & DETAIL + subtítulo CUIDADOS AUTOMOTIVOS no topo.
+- Menu desktop refinado e menu hambúrguer no celular/tablet.
+- Hero principal totalmente redesenhado em duas colunas no desktop.
+- Hero empilhado e otimizado para Android/iPhone.
+- Botões maiores de Agendar agora e Ver serviços.
+- Blocos de Qualidade técnica, Atendimento personalizado e Paixão por detalhes.
+- Área visual do hero com imagem configurável e logo destacada.
+- Novos cards para Próximo horário, Avaliações e Atendimentos finalizados.
+- Serviços, carros/motos, galeria, Instagram, avaliações e CTA com acabamento visual premium.
+- Mantém a logo e as imagens configuráveis pelo painel administrativo.
 
-ATUALIZAÇÃO PELO GITHUB/RENDER:
-1. Faça backup do banco pelo painel antes de atualizar.
-2. Extraia o ZIP de atualização.
-3. No GitHub, na RAIZ do repositório, use Add file > Upload files.
-4. Arraste o app.py e AS PASTAS templates e static. Não arraste os arquivos de dentro das pastas separadamente.
-5. Confirme que aparecem caminhos como templates/admin_settings.html e static/admin_nested_tabs.js.
-6. Confirme o commit.
-7. No Render: Manual Deploy > Deploy latest commit.
-8. Quando ficar Live, use CTRL+F5 no PC ou feche/reabra a aba no celular.
+ARQUIVOS DA ATUALIZAÇÃO:
+- templates/base.html
+- templates/home.html
+- static/style.css
+- static/app.js
 
-A atualização não contém ph_estetica.db, uploads ou backups.
+COMO ATUALIZAR NO GITHUB:
+1. Extraia o ZIP da atualização.
+2. Em GitHub > Add file > Upload files.
+3. Arraste app.py apenas se existir no pacote (nesta V14 não é necessário) e mantenha as pastas templates e static.
+4. Confirme que o GitHub mostra caminhos como templates/home.html e static/style.css.
+5. Clique em Confirmar alterações.
+6. No Render, use Manual Deploy > Deploy latest commit, caso o deploy automático não inicie.
+7. Quando ficar Live, atualize com Ctrl+F5 no PC. No celular, feche a aba e abra novamente.
+
+IMPORTANTE:
+- Esta atualização não contém ph_estetica.db.
+- Não substitui clientes, agendamentos, financeiro, backups ou fotos salvas no Persistent Disk.
+- A logo exibida continua sendo a logo configurada em Admin > Configurações.
