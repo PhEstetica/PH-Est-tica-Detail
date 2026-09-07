@@ -1,0 +1,54 @@
+{% extends 'admin_base.html' %}
+{% block title %}Área de testes — PH ESTÉTICA & DETAIL{% endblock %}
+{% block content %}
+<div class="admin-head test-lab-head"><div><span>LABORATÓRIO</span><h1>Área de testes</h1><p>Simule clientes e atendimentos sem misturar nada com clientes, agenda, caixa ou financeiro reais.</p></div><div class="actions"><a class="btn gold" href="/admin/testes/kanban">Kanban de teste</a><a class="btn ghost" href="/tv/testes" target="_blank">Modo TV de teste ↗</a></div></div>
+
+<div class="test-safe-banner"><b>AMBIENTE ISOLADO</b><span>Tudo criado aqui é fictício. Você pode testar serviços, adicionais, etapas do Kanban e Modo TV com segurança.</span></div>
+
+<section class="admin-section">
+  <div class="admin-section-title"><div><span>ATALHO</span><h2>Cenário pronto em 1 clique</h2></div></div>
+  <p class="muted">Cria automaticamente carros e motos em várias etapas para você enxergar o Kanban e a TV como se a estética estivesse cheia.</p>
+  <div class="actions">
+    <form method="post" action="/admin/testes/demo"><button class="btn gold" type="submit">Criar cenário demonstrativo</button></form>
+    <form method="post" action="/admin/testes/limpar" onsubmit="return confirm('Limpar somente os dados fictícios da Área de testes?')"><button class="btn danger" type="submit">Limpar ambiente de testes</button></form>
+  </div>
+</section>
+
+<section class="admin-section">
+  <div class="admin-section-title"><div><span>NOVO TESTE</span><h2>Cadastro fake personalizado</h2></div></div>
+  <form method="post" action="/admin/testes/novo" class="form-grid test-create-grid">
+    <label>Nome fictício<input name="customer_name" value="Cliente Teste" required></label>
+    <label>WhatsApp fictício (opcional)<input name="phone" placeholder="(38) 99999-9999"></label>
+    <label>Tipo<select name="vehicle_type"><option value="car">Carro</option><option value="moto">Moto</option></select></label>
+    <label>Marca<input name="brand" placeholder="Honda, Chevrolet..." required></label>
+    <label>Modelo<input name="model" placeholder="CB 300F, Onix..." required></label>
+    <label>Cor<input name="color" placeholder="Preto"></label>
+    <label class="full">Serviço<select name="service_id" required>{% for s in services %}<option value="{{s.id}}">{{s.name}} — {{price_display(s.price,s.price_mode)}}</option>{% endfor %}</select></label>
+    <div class="full test-extras-box"><b>Serviços adicionais / itens para testar</b><small>Selecione quantos quiser. Eles ficam apenas no cenário fake.</small><div class="check-grid">{% for x in extras %}<label class="check"><input type="checkbox" name="extra_ids" value="{{x.id}}"><span>{{x.name}} <small>{{price_display(x.price,x.price_mode)}}</small></span></label>{% else %}<span class="muted">Nenhum adicional ativo.</span>{% endfor %}</div></div>
+    <label>Data<input type="date" name="appointment_date" value="{{today}}" required></label>
+    <label>Horário<input type="time" name="appointment_time" value="09:00" required></label>
+    <label>Status inicial<select name="status">{% for key,label in status_labels.items() %}{% if key not in ['cancelled'] %}<option value="{{key}}">{{label}}</option>{% endif %}{% endfor %}</select></label>
+    <label class="full">Observações<textarea name="notes" placeholder="Ex.: testar lavagem detalhada com chuva ácida"></textarea></label>
+    <div class="full"><button class="btn gold" type="submit">Criar atendimento de teste</button></div>
+  </form>
+</section>
+
+<section class="admin-section">
+  <div class="admin-section-title"><div><span>CENÁRIOS</span><h2>Atendimentos fictícios cadastrados</h2></div><span class="pill">{{rows|length}} testes</span></div>
+  <div class="test-list-grid">
+    {% for r in rows %}
+    <article class="test-case-card">
+      <div class="test-case-top"><div><span class="role-chip role-manager">TESTE</span><h3>{{r.brand}} {{r.model}}</h3><p>{{r.customer_name}} · {{fmt_date(r.appointment_date)}} {{r.appointment_time}}</p></div><span class="status">{{status_labels[r.status]}}</span></div>
+      <div class="test-case-meta"><span><b>Serviço</b>{{r.service_name}}</span><span><b>Cor</b>{{r.color or '—'}}</span><span><b>Código</b>{{r.code}}</span></div>
+      {% set extras_list=test_row_extras(r) %}{% if extras_list %}<div class="test-extra-pills">{% for x in extras_list %}<span>{{x.name}}</span>{% endfor %}</div>{% endif %}
+      {% if r.notes %}<p class="muted">{{r.notes}}</p>{% endif %}
+      <div class="actions test-case-actions">
+        <form method="post" action="/admin/testes/{{r.id}}/status"><select name="status" onchange="this.form.submit()">{% for k,l in status_labels.items() %}{% if k!='cancelled' %}<option value="{{k}}" {% if r.status==k %}selected{% endif %}>{{l}}</option>{% endif %}{% endfor %}</select></form>
+        <form method="post" action="/admin/testes/{{r.id}}/avancar"><button class="btn ghost" type="submit">Avançar etapa →</button></form>
+        <form method="post" action="/admin/testes/{{r.id}}/excluir" onsubmit="return confirm('Excluir este cenário fictício?')"><button class="btn danger" type="submit">Excluir</button></form>
+      </div>
+    </article>
+    {% else %}<div class="notice">Nenhum cenário ainda. Use <b>Criar cenário demonstrativo</b> para preencher a tela rapidamente.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

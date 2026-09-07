@@ -1,1 +1,65 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta http-equiv="refresh" content="30"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/static/style.css"><title>Modo TV — PH</title></head><body class="tv-body"><header><img src="/static/logo.png"><div><b>CENTRAL DE ATENDIMENTOS</b><span>{{now.strftime('%d/%m/%Y %H:%M')}}</span></div></header><main><div class="tv-table"><div class="tv-row head"><span>HORÁRIO</span><span>VEÍCULO</span><span>STATUS</span></div>{% for r in rows %}<div class="tv-row {% if r.status=='ready' %}ready{% endif %}"><strong>{{r.appointment_time}}</strong><strong>{{r.model|upper}}</strong><span>{{status_labels[r.status]}}</span></div>{% else %}<div class="tv-empty">Nenhum atendimento na agenda de hoje.</div>{% endfor %}</div></main></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07080a">
+  <link rel="stylesheet" href="/static/style.css">
+  <title>{{tv_title or 'Modo TV'}} — PH ESTÉTICA & DETAIL</title>
+</head>
+<body class="tv-body tv-v152 {% if is_test %}tv-test-mode{% endif %}">
+  <header class="tv-header-v152">
+    <div class="tv-brand-v152">
+      <img src="{{brand_logo_url}}" alt="PH ESTÉTICA & DETAIL">
+      <div>
+        <span class="tv-kicker">{% if is_test %}AMBIENTE ISOLADO{% else %}PH ESTÉTICA & DETAIL{% endif %}</span>
+        <strong>{{tv_title or 'CENTRAL DE ATENDIMENTOS'}}</strong>
+        <small>{% if is_test %}Dados fictícios · não afeta clientes nem financeiro{% else %}Acompanhamento dos atendimentos de hoje{% endif %}</small>
+      </div>
+    </div>
+    <div class="tv-clock-box">
+      <b id="tvClock">{{now.strftime('%H:%M:%S')}}</b>
+      <span>{{now.strftime('%d/%m/%Y')}}</span>
+      <button type="button" id="tvFullscreen">⛶ Tela cheia</button>
+    </div>
+  </header>
+
+  {% if is_test %}<div class="tv-test-banner">MODO DE TESTE — nenhum dado desta tela pertence ao atendimento real</div>{% endif %}
+
+  <section class="tv-metrics-v152">
+    <article><span>AGENDADOS HOJE</span><strong>{{tv_stats.total}}</strong></article>
+    <article><span>EM ATENDIMENTO</span><strong>{{tv_stats.active}}</strong></article>
+    <article class="ready"><span>PRONTOS</span><strong>{{tv_stats.ready}}</strong></article>
+    <article><span>FINALIZADOS</span><strong>{{tv_stats.completed}}</strong></article>
+  </section>
+
+  <main class="tv-board-v152">
+    <div class="tv-board-head"><span>HORÁRIO</span><span>VEÍCULO</span><span>SERVIÇO</span><span>ETAPA</span></div>
+    {% for r in rows %}
+      <div class="tv-board-row status-{{r.status}}">
+        <strong class="tv-time">{{r.appointment_time}}</strong>
+        <div class="tv-vehicle"><b>{{r.brand|upper}} {{r.model|upper}}</b><small>{{r.code}}</small></div>
+        <span class="tv-service">{{r.service_name}}</span>
+        <span class="tv-status-pill">{{status_labels[r.status]}}</span>
+      </div>
+    {% else %}
+      <div class="tv-empty-v152"><span>✨</span><b>Nenhum atendimento na agenda de hoje.</b><small>Assim que houver movimentação, ela aparecerá automaticamente aqui.</small></div>
+    {% endfor %}
+  </main>
+
+  <footer class="tv-footer-v152">
+    <span>Atualização automática a cada {{tv_refresh_seconds or 20}} segundos</span>
+    {% if is_test %}<a href="/admin/testes" target="_self">Voltar para Área de testes</a>{% endif %}
+  </footer>
+<script>
+(function(){
+  const clock=document.getElementById('tvClock');
+  function tick(){const d=new Date(); clock.textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+  tick(); setInterval(tick,1000);
+  const btn=document.getElementById('tvFullscreen');
+  btn?.addEventListener('click',async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();btn.textContent='⛶ Sair da tela cheia';}else{await document.exitFullscreen();btn.textContent='⛶ Tela cheia';}}catch(e){}});
+  setTimeout(()=>location.reload(), {{(tv_refresh_seconds or 20)*1000}});
+})();
+</script>
+</body>
+</html>

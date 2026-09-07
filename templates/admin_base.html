@@ -34,6 +34,7 @@
       {% if admin_can('reminders') %}<a href="/admin/lembretes">Lembretes</a>{% endif %}
       {% if admin_can('boxes') %}<a href="/admin/boxes">Boxes</a>{% endif %}
       {% if admin_can('promotions') %}<a href="/admin/promocoes">Promoções</a>{% endif %}
+      {% if admin_can('tests') %}<a href="/admin/testes">🧪 Área de testes</a>{% endif %}
       {% if admin_can('settings') %}<a href="/admin/configuracoes">Configurações</a>{% endif %}
       {% if admin_user and admin_user.role in ['master','manager'] %}<a href="/admin/usuarios">Usuários e acessos</a>{% endif %}
       <a href="/admin/meu-acesso">Meu acesso</a>

@@ -1,0 +1,7 @@
+{% extends 'admin_base.html' %}
+{% block title %}Kanban de teste — PH ESTÉTICA & DETAIL{% endblock %}
+{% block content %}
+<div class="admin-head"><div><span>LABORATÓRIO</span><h1>Kanban de teste</h1><p>Uma cópia visual do fluxo real usando apenas dados fictícios de {{fmt_date(today)}}.</p></div><div class="actions"><a class="btn ghost" href="/admin/testes">Área de testes</a><a class="btn gold" href="/tv/testes" target="_blank">Abrir TV de teste ↗</a></div></div>
+<div class="test-safe-banner"><b>TESTE</b><span>Mover etapas aqui não altera nenhum agendamento real.</span></div>
+<div class="kanban test-kanban">{% for key,label in kanban %}<section><h3>{{label}} <span>{{columns[key]|length}}</span></h3>{% for a in columns[key] %}<article class="kanban-card test-kanban-card"><div class="test-mini-chip">FAKE</div><b>{{a.brand}} {{a.model}}</b><small>{{a.customer_name}}</small><span>{{a.appointment_time}} · {{a.service_name}}</span><form method="post" action="/admin/testes/{{a.id}}/status"><select name="status" onchange="this.form.submit()">{% for k,l in status_labels.items() %}{% if k!='cancelled' %}<option value="{{k}}" {% if a.status==k %}selected{% endif %}>{{l}}</option>{% endif %}{% endfor %}</select></form><form method="post" action="/admin/testes/{{a.id}}/avancar"><button class="btn ghost wide" type="submit">Avançar etapa →</button></form></article>{% endfor %}</section>{% endfor %}</div>
+{% endblock %}
