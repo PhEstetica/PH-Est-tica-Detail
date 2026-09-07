@@ -2945,7 +2945,8 @@ def admin_finance(request: Request):
         expense_dist = sorted(summary["categories"].items(), key=lambda x:x[1], reverse=True)
         pending_expenses = conn.execute("""SELECT e.*,c.name category_name FROM finance_expenses e JOIN expense_categories c ON c.id=e.category_id WHERE e.status='pending' AND e.cancelled_at IS NULL ORDER BY COALESCE(e.due_date,e.expense_date) LIMIT 30""").fetchall()
         helpers_due = conn.execute("""SELECT h.id,h.name,COALESCE((SELECT SUM(ah.amount) FROM appointment_helper_costs ah JOIN appointments a ON a.id=ah.appointment_id WHERE ah.helper_id=h.id AND a.status!='cancelled'),0) generated,COALESCE((SELECT SUM(hp.amount) FROM helper_payments hp WHERE hp.helper_id=h.id AND hp.cancelled_at IS NULL),0) paid FROM finance_helpers h WHERE h.active=1 ORDER BY h.name""").fetchall()
-    return templates.TemplateResponse(request,"admin_finance.html",template_ctx(request,summary=summary,lifetime=lifetime,period=period,monthly=monthly,expense_dist=expense_dist,pending_expenses=pending_expenses,helpers_due=helpers_due))
+        pending_payment_rows = conn.execute("""SELECT a.*,c.name customer_name,c.phone,v.brand,v.model,s.name service_name FROM appointments a JOIN customers c ON c.id=a.customer_id JOIN vehicles v ON v.id=a.vehicle_id JOIN services s ON s.id=a.service_id WHERE a.payment_status!='paid' AND a.status!='cancelled' ORDER BY a.appointment_date,a.appointment_time LIMIT 100""").fetchall()
+    return templates.TemplateResponse(request,"admin_finance.html",template_ctx(request,summary=summary,lifetime=lifetime,period=period,monthly=monthly,expense_dist=expense_dist,pending_expenses=pending_expenses,helpers_due=helpers_due,pending_payment_rows=pending_payment_rows))
 
 
 @app.get("/admin/agendamento/{appointment_id}/cobranca-whatsapp")

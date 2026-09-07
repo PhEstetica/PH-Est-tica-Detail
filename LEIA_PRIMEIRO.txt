@@ -1,26 +1,32 @@
-PH ESTÉTICA & DETAIL — V13.7
+PH ESTÉTICA & DETAIL — V13.9 — PAINEL ORGANIZADO EM ABAS E SUBABAS
 
-NOVIDADES
-1. Instagram direto no site
-- O campo Instagram já existente em Admin > Configurações > Identidade e contato agora é usado no site.
-- Aceita @usuario, usuario, instagram.com/usuario ou URL completa.
-- Quando preenchido, aparece link no menu do PC, bloco "Seguir no Instagram" na home e botão Instagram no CTA final.
+O que mudou:
+- Serviços e preços mantém: Preços e serviços > Moto/Carro; Serviços adicionais > Moto/Carro.
+- Configurações ganhou subabas dentro das abas principais:
+  * Identidade e contato > Contato / Textos da home / Regras
+  * Mensagens do WhatsApp > Início / Finalização / Cobrança
+  * Imagens da home > Banner / Carros / Motos
+  * Backups > Baixar / Restaurar / No servidor
+- Agenda > Horários / Capacidade / Bloqueios; dentro de Horários: Horário padrão / Semana completa.
+- Perguntas do veículo > Perguntas cadastradas / Nova pergunta; cadastradas separadas em Moto / Carro / Carro e moto.
+- Financeiro mantém as abas principais e ganhou subabas internas em Visão Geral, Receitas, Despesas, Ajudantes, Investimentos, Aportes e Fechamento.
+- Detalhe do atendimento > Atendimento / Financeiro / Check-in / Fotos / Avaliação, com novas subabas internas.
+- Galeria > Fotos cadastradas / Adicionar foto.
+- Promoções > Promoções cadastradas / Nova promoção.
+- Avaliações > Todas / Autorizadas para home / Não públicas.
+- Marcas e modelos já possuía separação Carros / Motos e foi mantida.
+- Páginas simples (Clientes, Hoje, Kanban, Lembretes, Boxes etc.) não receberam abas artificiais, porque já têm uma única função.
+- As abas lembram a última posição usada em cada página.
+- Layout adaptado para PC e celular.
 
-2. Cliente já cadastrado internamente + primeiro acesso pelo site
-- O vínculo usa o WhatsApp/telefone normalizado.
-- Se o número for o mesmo, NÃO cria outro cliente.
-- O novo acesso é ligado ao cadastro interno já existente.
-- Veículos e atendimentos anteriores continuam no mesmo histórico.
-- O cliente recebe um aviso na Minha Garagem informando que o cadastro anterior foi encontrado e vinculado.
-- Se o cliente usar outro número de telefone, o sistema não tenta unir automaticamente para evitar vincular pessoas erradas.
+ATUALIZAÇÃO PELO GITHUB/RENDER:
+1. Faça backup do banco pelo painel antes de atualizar.
+2. Extraia o ZIP de atualização.
+3. No GitHub, na RAIZ do repositório, use Add file > Upload files.
+4. Arraste o app.py e AS PASTAS templates e static. Não arraste os arquivos de dentro das pastas separadamente.
+5. Confirme que aparecem caminhos como templates/admin_settings.html e static/admin_nested_tabs.js.
+6. Confirme o commit.
+7. No Render: Manual Deploy > Deploy latest commit.
+8. Quando ficar Live, use CTRL+F5 no PC ou feche/reabra a aba no celular.
 
-ATUALIZAÇÃO NO GITHUB
-Envie mantendo as pastas:
-- app.py
-- templates/base.html
-- templates/home.html
-- templates/garage.html
-- templates/admin_settings.html
-- static/style.css
-
-Não substitua ph_estetica.db.
+A atualização não contém ph_estetica.db, uploads ou backups.
