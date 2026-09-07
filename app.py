@@ -179,6 +179,7 @@ ADMIN_PERMISSION_DEFS = [
     ("promotions", "Promoções", "Campanhas e promoções"),
     ("settings", "Configurações", "Identidade, WhatsApp, imagens e aparência"),
     ("backups", "Backups", "Baixar e restaurar backups"),
+    ("tests", "Área de testes", "Ambiente isolado para testar serviços, Kanban e Modo TV sem afetar dados reais"),
 ]
 ADMIN_PERMISSION_KEYS = {item[0] for item in ADMIN_PERMISSION_DEFS}
 
@@ -762,6 +763,7 @@ def admin_permission_for_path(path: str) -> str | None:
     if path in {"/admin", "/admin/"}: return "dashboard"
     if path.startswith("/admin/backup"): return "backups"
     if path.startswith("/admin/configuracoes"): return "settings"
+    if path.startswith("/admin/testes"): return "tests"
     if path.startswith("/admin/usuarios"): return None  # regras próprias: mestre/gerente
     if path.startswith("/admin/meu-acesso"): return None
     if path.startswith("/admin/financeiro") or path.startswith("/admin/pagamentos"): return "finance"
@@ -787,7 +789,7 @@ def admin_first_allowed_url(request: Request) -> str:
         ("dashboard", "/admin"), ("today", "/admin/hoje"), ("appointments", "/admin/agendamentos"),
         ("kanban", "/admin/kanban"), ("services", "/admin/servicos"), ("schedule", "/admin/agenda"),
         ("customers", "/admin/clientes"), ("finance", "/admin/financeiro"), ("reviews", "/admin/avaliacoes"),
-        ("gallery", "/admin/galeria"), ("settings", "/admin/configuracoes"),
+        ("gallery", "/admin/galeria"), ("settings", "/admin/configuracoes"), ("tests", "/admin/testes"),
     ]
     for permission, url in choices:
         if admin_can(request, permission):
@@ -1128,6 +1130,25 @@ def init_db():
         price_snapshot REAL,
         FOREIGN KEY(appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
         FOREIGN KEY(extra_id) REFERENCES service_extras(id)
+    );
+    CREATE TABLE IF NOT EXISTS test_appointments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        customer_name TEXT NOT NULL,
+        phone TEXT,
+        vehicle_type TEXT NOT NULL DEFAULT 'car',
+        brand TEXT NOT NULL,
+        model TEXT NOT NULL,
+        color TEXT,
+        service_id INTEGER,
+        service_name TEXT NOT NULL,
+        extras_json TEXT NOT NULL DEFAULT '[]',
+        appointment_date TEXT NOT NULL,
+        appointment_time TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'scheduled',
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS availability (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3885,12 +3906,154 @@ def admin_reminders(request: Request):
     return templates.TemplateResponse(request, "admin_reminders.html", template_ctx(request, rows=items, tomorrow=tomorrow))
 
 
+def _tv_stats(rows):
+    active_statuses = {"received", "preparation", "washing", "detailing", "finishing", "inspection"}
+    return {
+        "total": len(rows),
+        "active": sum(1 for r in rows if r["status"] in active_statuses),
+        "ready": sum(1 for r in rows if r["status"] == "ready"),
+        "completed": sum(1 for r in rows if r["status"] == "completed"),
+    }
+
+
 @app.get("/tv", response_class=HTMLResponse)
 def tv_mode(request: Request):
     today=date.today().isoformat()
     with closing(db_conn()) as conn:
-        rows=conn.execute("""SELECT a.code,a.appointment_time,a.status,v.model FROM appointments a JOIN vehicles v ON v.id=a.vehicle_id WHERE a.appointment_date=? AND a.status!='cancelled' ORDER BY a.appointment_time""",(today,)).fetchall()
-    return templates.TemplateResponse(request, "tv.html",template_ctx(request,rows=rows,now=datetime.now()))
+        rows=conn.execute("""
+            SELECT a.code,a.appointment_time,a.status,v.brand,v.model,s.name service_name
+            FROM appointments a
+            JOIN vehicles v ON v.id=a.vehicle_id
+            JOIN services s ON s.id=a.service_id
+            WHERE a.appointment_date=? AND a.status!='cancelled'
+            ORDER BY a.appointment_time
+        """,(today,)).fetchall()
+    return templates.TemplateResponse(request, "tv.html",template_ctx(request,rows=rows,now=datetime.now(),tv_stats=_tv_stats(rows),is_test=False,tv_title="CENTRAL DE ATENDIMENTOS",tv_refresh_seconds=20))
+
+
+TEST_STATUS_FLOW = ["scheduled", "received", "washing", "detailing", "finishing", "ready", "completed"]
+
+
+def _test_row_extras(row):
+    try:
+        data=json.loads(row["extras_json"] or "[]")
+        return data if isinstance(data,list) else []
+    except Exception:
+        return []
+
+
+@app.get("/admin/testes", response_class=HTMLResponse)
+def admin_tests(request: Request):
+    with closing(db_conn()) as conn:
+        rows=conn.execute("SELECT * FROM test_appointments ORDER BY appointment_date DESC,appointment_time,id DESC LIMIT 300").fetchall()
+        services=conn.execute("SELECT * FROM services WHERE active=1 ORDER BY category_code,sort_order,id").fetchall()
+        extras=conn.execute("SELECT * FROM service_extras WHERE active=1 ORDER BY COALESCE(category_code,'all'),name").fetchall()
+    return templates.TemplateResponse(request,"admin_tests.html",template_ctx(request,rows=rows,services=services,extras=extras,today=date.today().isoformat(),test_status_flow=TEST_STATUS_FLOW,test_row_extras=_test_row_extras))
+
+
+@app.post("/admin/testes/novo")
+def admin_test_create(
+    request: Request,
+    customer_name: str=Form("Cliente Teste"),
+    phone: str=Form(""),
+    vehicle_type: str=Form("car"),
+    brand: str=Form(...),
+    model: str=Form(...),
+    color: str=Form(""),
+    service_id: int=Form(...),
+    appointment_date: str=Form(...),
+    appointment_time: str=Form(...),
+    status: str=Form("scheduled"),
+    notes: str=Form(""),
+    extra_ids: list[int]=Form([]),
+):
+    if status not in STATUS_LABELS or status == "cancelled": raise HTTPException(400,"Status de teste inválido")
+    with closing(db_conn()) as conn:
+        service=conn.execute("SELECT * FROM services WHERE id=?",(service_id,)).fetchone()
+        if not service: raise HTTPException(404,"Serviço não encontrado")
+        extras=[]
+        if extra_ids:
+            q=",".join("?" for _ in extra_ids)
+            for x in conn.execute(f"SELECT id,name,price,price_mode FROM service_extras WHERE id IN ({q})",tuple(extra_ids)).fetchall():
+                extras.append({"id":x["id"],"name":x["name"],"price":x["price"],"price_mode":x["price_mode"]})
+        code=f"TST-{datetime.now().strftime('%y%m%d%H%M%S')}-{secrets.randbelow(900)+100}"
+        stamp=now_iso()
+        conn.execute("""INSERT INTO test_appointments(code,customer_name,phone,vehicle_type,brand,model,color,service_id,service_name,extras_json,appointment_date,appointment_time,status,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",(code,customer_name.strip() or "Cliente Teste",normalize_phone(phone),vehicle_type,brand.strip(),model.strip(),color.strip(),service_id,service["name"],json.dumps(extras,ensure_ascii=False),appointment_date,appointment_time,status,notes.strip(),stamp,stamp))
+        conn.commit()
+    return RedirectResponse("/admin/testes?created=1",303)
+
+
+@app.post("/admin/testes/demo")
+def admin_test_demo(request: Request):
+    today=date.today().isoformat(); stamp=now_iso()
+    demos=[
+        ("Paulo Teste","moto","Honda","CB 300F","Vermelha","08:00","scheduled"),
+        ("Ana Teste","car","Chevrolet","Onix Plus","Preto","09:00","received"),
+        ("Carlos Teste","car","Toyota","Hilux","Branca","10:00","washing"),
+        ("Marina Teste","car","Volkswagen","Nivus","Cinza","11:00","detailing"),
+        ("João Teste","car","Toyota","Corolla","Prata","13:30","finishing"),
+        ("Lucas Teste","moto","Honda","XRE 300","Preta","15:00","ready"),
+    ]
+    with closing(db_conn()) as conn:
+        svcs=conn.execute("SELECT id,name FROM services WHERE active=1 ORDER BY sort_order,id").fetchall()
+        if not svcs: raise HTTPException(400,"Cadastre ao menos um serviço antes de criar o cenário de demonstração")
+        for i,d in enumerate(demos):
+            svc=svcs[i % len(svcs)]
+            code=f"DEMO-{datetime.now().strftime('%H%M%S')}-{i+1}"
+            conn.execute("""INSERT OR IGNORE INTO test_appointments(code,customer_name,phone,vehicle_type,brand,model,color,service_id,service_name,extras_json,appointment_date,appointment_time,status,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",(code,d[0],"",d[1],d[2],d[3],d[4],svc["id"],svc["name"],"[]",today,d[5],d[6],"Cenário demonstrativo V15.2",stamp,stamp))
+        conn.commit()
+    return RedirectResponse("/admin/testes?demo=1",303)
+
+
+@app.post("/admin/testes/{test_id}/status")
+def admin_test_status(request: Request,test_id:int,status:str=Form(...)):
+    if status not in STATUS_LABELS or status=="cancelled": raise HTTPException(400,"Status inválido")
+    with closing(db_conn()) as conn:
+        conn.execute("UPDATE test_appointments SET status=?,updated_at=? WHERE id=?",(status,now_iso(),test_id)); conn.commit()
+    return RedirectResponse(request.headers.get("referer") or "/admin/testes/kanban",303)
+
+
+@app.post("/admin/testes/{test_id}/avancar")
+def admin_test_advance(request: Request,test_id:int):
+    with closing(db_conn()) as conn:
+        row=conn.execute("SELECT status FROM test_appointments WHERE id=?",(test_id,)).fetchone()
+        if not row: raise HTTPException(404)
+        try: idx=TEST_STATUS_FLOW.index(row["status"])
+        except ValueError: idx=0
+        new_status=TEST_STATUS_FLOW[min(idx+1,len(TEST_STATUS_FLOW)-1)]
+        conn.execute("UPDATE test_appointments SET status=?,updated_at=? WHERE id=?",(new_status,now_iso(),test_id)); conn.commit()
+    return RedirectResponse(request.headers.get("referer") or "/admin/testes/kanban",303)
+
+
+@app.post("/admin/testes/{test_id}/excluir")
+def admin_test_delete(request: Request,test_id:int):
+    with closing(db_conn()) as conn:
+        conn.execute("DELETE FROM test_appointments WHERE id=?",(test_id,)); conn.commit()
+    return RedirectResponse("/admin/testes?deleted=1",303)
+
+
+@app.post("/admin/testes/limpar")
+def admin_test_clear(request: Request):
+    with closing(db_conn()) as conn:
+        conn.execute("DELETE FROM test_appointments"); conn.commit()
+    return RedirectResponse("/admin/testes?cleared=1",303)
+
+
+@app.get("/admin/testes/kanban", response_class=HTMLResponse)
+def admin_test_kanban(request: Request):
+    today=date.today().isoformat()
+    with closing(db_conn()) as conn:
+        rows=conn.execute("SELECT * FROM test_appointments WHERE appointment_date=? AND status!='completed' ORDER BY appointment_time,id",(today,)).fetchall()
+    columns={k:[r for r in rows if r["status"]==k] for k,_ in KANBAN}
+    return templates.TemplateResponse(request,"admin_test_kanban.html",template_ctx(request,columns=columns,kanban=KANBAN,today=today))
+
+
+@app.get("/tv/testes", response_class=HTMLResponse)
+def tv_test_mode(request: Request):
+    today=date.today().isoformat()
+    with closing(db_conn()) as conn:
+        rows=conn.execute("SELECT code,appointment_time,status,brand,model,service_name FROM test_appointments WHERE appointment_date=? ORDER BY appointment_time,id",(today,)).fetchall()
+    return templates.TemplateResponse(request,"tv.html",template_ctx(request,rows=rows,now=datetime.now(),tv_stats=_tv_stats(rows),is_test=True,tv_title="MODO TV · AMBIENTE DE TESTES",tv_refresh_seconds=15))
 
 
 @app.get("/saude")
