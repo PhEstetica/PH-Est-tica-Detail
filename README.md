@@ -297,3 +297,13 @@ Na tela **Admin → Agendamentos → Registrar atendimento já realizado**, marc
 Esta edição consolidada da V13 adiciona abertura facilitada do calendário em todos os campos de data do módulo Financeiro. Basta clicar no campo de data para abrir o seletor de calendário do navegador. Isso vale para filtros de período, despesas, vencimentos, pagamentos, investimentos, aportes, pagamentos de ajudantes e demais datas financeiras. Campos de competência mensal também recebem o seletor de mês.
 
 A alteração é apenas de interface: não muda regras financeiras nem exige migração do banco.
+
+## V13.1 — layout responsivo para celular e tablet
+
+O site público e, principalmente, o painel administrativo foram ajustados para se adaptar automaticamente a telas menores. No celular, o admin passa a ter menu lateral recolhível, formulários em uma coluna, cards e métricas responsivos, tabelas com rolagem horizontal e controles financeiros reorganizados. A atualização não altera o banco de dados nem as regras do sistema.
+
+## V13.2 — Backup para download
+- botão de download explícito em Configurações;
+- download forçado em `.db`;
+- backups manuais com data/hora, sem sobrescrever o anterior;
+- cada backup listado pode ser baixado individualmente.

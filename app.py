@@ -483,10 +483,15 @@ def current_whatsapp_number(conn=None):
 def create_daily_backup(force=False):
     if not DB_PATH.exists():
         return None
-    stamp = date.today().isoformat()
-    target = BACKUP_DIR / f"ph_estetica_{stamp}.db"
-    if target.exists() and not force:
-        return target
+    if force:
+        # Backup manual: usa data e hora para nunca sobrescrever outro download.
+        stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        target = BACKUP_DIR / f"ph_estetica_manual_{stamp}.db"
+    else:
+        stamp = date.today().isoformat()
+        target = BACKUP_DIR / f"ph_estetica_{stamp}.db"
+        if target.exists():
+            return target
     try:
         src = sqlite3.connect(DB_PATH)
         dst = sqlite3.connect(target)
@@ -3143,11 +3148,41 @@ def admin_home_image_reset(request: Request, slot: str):
 
 @app.get("/admin/backup")
 def admin_backup_download(request: Request):
+    """Gera uma cópia consistente do SQLite e força o download no navegador."""
     _admin_required(request)
     path = create_daily_backup(force=True)
-    if not path:
+    if not path or not path.exists():
         raise HTTPException(500, "Não foi possível gerar o backup.")
-    return FileResponse(path, media_type="application/octet-stream", filename=path.name)
+    return FileResponse(
+        path,
+        media_type="application/x-sqlite3",
+        filename=path.name,
+        headers={
+            "Content-Disposition": f'attachment; filename="{path.name}"',
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+    )
+
+
+@app.get("/admin/backup/arquivo/{backup_name}")
+def admin_backup_existing_download(request: Request, backup_name: str):
+    """Permite baixar também qualquer backup listado em Configurações."""
+    _admin_required(request)
+    safe_name = Path(backup_name).name
+    if safe_name != backup_name or not safe_name.endswith(".db"):
+        raise HTTPException(400, "Nome de backup inválido.")
+    path = BACKUP_DIR / safe_name
+    if not path.exists() or not path.is_file():
+        raise HTTPException(404, "Backup não encontrado.")
+    return FileResponse(
+        path,
+        media_type="application/x-sqlite3",
+        filename=path.name,
+        headers={
+            "Content-Disposition": f'attachment; filename="{path.name}"',
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+    )
 
 
 @app.get("/admin/lembretes", response_class=HTMLResponse)

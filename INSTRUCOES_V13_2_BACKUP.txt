@@ -1,0 +1,18 @@
+PH ESTÉTICA & DETAIL — V13.2 BACKUP
+
+O que mudou:
+- Botão de backup ficou visível dentro de Admin > Configurações > Backup do sistema.
+- O download agora é forçado como arquivo .db no navegador.
+- Cada backup manual recebe data e hora no nome e não sobrescreve o anterior.
+- A lista de backups agora possui botão "Baixar" em cada arquivo.
+- Nova rota segura para baixar backups já existentes.
+
+ATUALIZAÇÃO:
+1. Pare o servidor se estiver rodando localmente.
+2. Não substitua nem apague o seu ph_estetica.db.
+3. Copie app.py e templates/admin_settings.html por cima da versão atual.
+4. No GitHub, envie esses dois arquivos e confirme o commit.
+5. No Render, faça Deploy latest commit.
+6. Acesse Admin > Configurações > Backup do sistema e clique em "Baixar backup agora (.db)".
+
+Esta atualização não altera tabelas nem dados do banco.
