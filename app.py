@@ -2663,6 +2663,31 @@ def admin_vehicle_question_delete(request: Request, question_id:int):
     return RedirectResponse("/admin/perguntas-veiculo?deleted=1",303)
 
 
+def _agenda_time(value: str | None) -> str | None:
+    value = (value or "").strip()
+    if not value:
+        return None
+    if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
+        raise ValueError(f"Horário inválido: {value}")
+    return value
+
+
+def _validate_business_hours(is_open: bool, open_time: str | None, close_time: str | None, lunch_start: str | None, lunch_end: str | None):
+    if not is_open:
+        return
+    if not open_time or not close_time:
+        raise ValueError("Informe abertura e fechamento dos dias marcados como abertos.")
+    if close_time <= open_time:
+        raise ValueError("O horário de fechamento precisa ser depois da abertura.")
+    if bool(lunch_start) != bool(lunch_end):
+        raise ValueError("Informe o início e o fim do almoço, ou deixe os dois vazios.")
+    if lunch_start and lunch_end:
+        if lunch_end <= lunch_start:
+            raise ValueError("O fim do almoço precisa ser depois do início.")
+        if lunch_start < open_time or lunch_end > close_time:
+            raise ValueError("O intervalo de almoço precisa ficar dentro do horário de funcionamento.")
+
+
 @app.get("/admin/agenda", response_class=HTMLResponse)
 def admin_schedule(request: Request):
     if not request.session.get("is_admin"): return RedirectResponse("/admin/login",303)
@@ -2670,15 +2695,86 @@ def admin_schedule(request: Request):
         hours=conn.execute("SELECT * FROM business_hours ORDER BY weekday").fetchall()
         blocks=conn.execute("SELECT * FROM blocked_times ORDER BY block_date DESC,id DESC LIMIT 100").fetchall()
         interval=setting(conn,"interval_minutes","0"); capacity=setting(conn,"simultaneous_capacity","1")
-    return templates.TemplateResponse(request, "admin_schedule.html",template_ctx(request,hours=hours,blocks=blocks,interval=interval,capacity=capacity))
+    first_open = next((h for h in hours if h["is_open"]), None)
+    preset = {
+        "open_time": first_open["open_time"] if first_open else "08:00",
+        "close_time": first_open["close_time"] if first_open else "18:00",
+        "lunch_start": first_open["lunch_start"] if first_open else "12:00",
+        "lunch_end": first_open["lunch_end"] if first_open else "13:00",
+    }
+    return templates.TemplateResponse(request, "admin_schedule.html",template_ctx(request,hours=hours,blocks=blocks,interval=interval,capacity=capacity,preset=preset))
 
 
 @app.post("/admin/agenda/horas")
 def admin_schedule_hours(request: Request, weekday:int=Form(...), is_open:str=Form("0"), open_time:str=Form(""), close_time:str=Form(""), lunch_start:str=Form(""), lunch_end:str=Form("")):
     if not request.session.get("is_admin"): raise HTTPException(401)
+    try:
+        ot, ct, ls, le = map(_agenda_time, (open_time, close_time, lunch_start, lunch_end))
+        _validate_business_hours(is_open=="1", ot, ct, ls, le)
+    except ValueError as exc:
+        return RedirectResponse(f"/admin/agenda?error={urllib.parse.quote(str(exc))}",303)
     with closing(db_conn()) as conn:
-        conn.execute("UPDATE business_hours SET is_open=?,open_time=?,close_time=?,lunch_start=?,lunch_end=? WHERE weekday=?",(1 if is_open=="1" else 0,open_time or None,close_time or None,lunch_start or None,lunch_end or None,weekday)); conn.commit()
-    return RedirectResponse("/admin/agenda",303)
+        conn.execute("UPDATE business_hours SET is_open=?,open_time=?,close_time=?,lunch_start=?,lunch_end=? WHERE weekday=?",(1 if is_open=="1" else 0,ot,ct,ls,le,weekday)); conn.commit()
+    return RedirectResponse("/admin/agenda?saved=day",303)
+
+
+@app.post("/admin/agenda/semana")
+async def admin_schedule_week(request: Request):
+    if not request.session.get("is_admin"): raise HTTPException(401)
+    form = await request.form()
+    updates = []
+    try:
+        for wd in range(7):
+            is_open = str(form.get(f"is_open_{wd}", "0")) == "1"
+            ot = _agenda_time(form.get(f"open_time_{wd}"))
+            ct = _agenda_time(form.get(f"close_time_{wd}"))
+            ls = _agenda_time(form.get(f"lunch_start_{wd}"))
+            le = _agenda_time(form.get(f"lunch_end_{wd}"))
+            _validate_business_hours(is_open, ot, ct, ls, le)
+            updates.append((1 if is_open else 0, ot, ct, ls, le, wd))
+    except ValueError as exc:
+        return RedirectResponse(f"/admin/agenda?error={urllib.parse.quote(str(exc))}",303)
+    with closing(db_conn()) as conn:
+        conn.executemany("UPDATE business_hours SET is_open=?,open_time=?,close_time=?,lunch_start=?,lunch_end=? WHERE weekday=?", updates)
+        conn.commit()
+    return RedirectResponse("/admin/agenda?saved=week",303)
+
+
+@app.post("/admin/agenda/aplicar-padrao")
+async def admin_schedule_apply_preset(request: Request):
+    if not request.session.get("is_admin"): raise HTTPException(401)
+    form = await request.form()
+    selected = []
+    for value in form.getlist("weekdays"):
+        try:
+            wd = int(value)
+        except (TypeError, ValueError):
+            continue
+        if 0 <= wd <= 6 and wd not in selected:
+            selected.append(wd)
+    if not selected:
+        return RedirectResponse("/admin/agenda?error=" + urllib.parse.quote("Selecione pelo menos um dia da semana."),303)
+    state = str(form.get("preset_state", "open"))
+    if state == "closed":
+        with closing(db_conn()) as conn:
+            conn.executemany("UPDATE business_hours SET is_open=0 WHERE weekday=?", [(wd,) for wd in selected])
+            conn.commit()
+        return RedirectResponse("/admin/agenda?saved=preset",303)
+    try:
+        ot = _agenda_time(form.get("open_time"))
+        ct = _agenda_time(form.get("close_time"))
+        ls = _agenda_time(form.get("lunch_start"))
+        le = _agenda_time(form.get("lunch_end"))
+        _validate_business_hours(True, ot, ct, ls, le)
+    except ValueError as exc:
+        return RedirectResponse(f"/admin/agenda?error={urllib.parse.quote(str(exc))}",303)
+    with closing(db_conn()) as conn:
+        conn.executemany(
+            "UPDATE business_hours SET is_open=1,open_time=?,close_time=?,lunch_start=?,lunch_end=? WHERE weekday=?",
+            [(ot,ct,ls,le,wd) for wd in selected],
+        )
+        conn.commit()
+    return RedirectResponse("/admin/agenda?saved=preset",303)
 
 
 @app.post("/admin/agenda/config")

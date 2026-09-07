@@ -1,19 +1,19 @@
-PH ESTETICA - V13.5.2 GITHUB FACIL
+PH ESTÉTICA & DETAIL — V13.6
+AGENDA SEMANAL FACILITADA
 
-IMPORTANTE: NAO envie os arquivos .html/.js soltos.
+Novidades:
+- Horário padrão aplicado a vários dias de uma vez.
+- Atalhos Seg–Sex, Seg–Sáb e Todos.
+- Semana inteira editável com apenas um botão Salvar.
+- Seletor nativo de horário (no celular abre como seletor de hora/despertador).
+- Calendário nativo para bloqueio de datas.
+- Atalhos Hoje, Amanhã e Daqui 7 dias para bloqueios.
+- Mantém horários individuais para exceções.
+- Nenhuma alteração no banco é necessária e nenhum dado existente é apagado.
 
-No GitHub, na raiz do repositorio:
-1. Add file -> Upload files.
-2. Nesta pasta extraida, arraste SOMENTE estes itens:
-   - app.py
-   - pasta templates
-   - pasta static
-3. O GitHub deve mostrar caminhos como:
-   templates/admin_settings.html
-   static/style.css
-4. Se aparecer admin_settings.html ou style.css sem a pasta na frente, NAO confirme.
-5. Confirme as alteracoes e depois faca Deploy latest commit no Render.
-
-A pasta templates desta atualizacao contem somente os templates que precisam ser substituidos.
-A pasta static contem somente os arquivos estaticos que precisam ser substituidos.
-O banco de dados nao faz parte desta atualizacao.
+Atualização no GitHub/Render:
+1. Faça backup do sistema.
+2. Extraia o ZIP de atualização.
+3. Envie app.py, templates/ e static/ mantendo essas pastas no GitHub.
+4. Confirme o commit.
+5. No Render use Manual Deploy > Deploy latest commit, caso o deploy automático não inicie.
