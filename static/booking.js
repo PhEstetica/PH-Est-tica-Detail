@@ -5,6 +5,24 @@
   const $=id=>document.getElementById(id);
   const paymentText=()=>form.querySelector('input[name="payment_method"]:checked')?.dataset.label||'Não selecionada';
   const categoryLabel=()=>state.category==='moto'?'Moto':state.category==='car_large'?'Carro grande':state.category==='car_small'?'Carro pequeno/médio':'—';
+  const priceMode=item=>String(item?.price_mode||(item?.price==null?'evaluation':'fixed')).toLowerCase();
+  const itemPriceText=(item,extra=false)=>{
+    const mode=priceMode(item);
+    if(mode==='evaluation'||item?.price==null) return 'Sob avaliação';
+    if(mode==='from') return `${extra?'+ ':''}A partir de ${PH.brl(item.price)}`;
+    return `${extra?'+ ':''}${PH.brl(item.price)}`;
+  };
+  function currentEstimate(){
+    let total=state.service?Number(state.service.price||0):0;
+    let variable=!!state.service&&priceMode(state.service)==='from';
+    let pending=0;
+    state.extras.filter(e=>state.extraIds.has(e.id)).forEach(e=>{
+      const mode=priceMode(e);
+      if(mode==='evaluation'||e.price==null){pending++;variable=true;}
+      else{total+=Number(e.price||0);if(mode==='from')variable=true;}
+    });
+    return {total,variable,pending};
+  }
   const vehicleCatalog=window.PHVehicleCatalog?.attach({
     vehicleType:'car', brandSearch:'brandSearch', brandValue:'brand', brandId:'brandCatalogId', brandMenu:'brandSuggestions', brandHelp:'brandHelp',
     modelSearch:'modelSearch', modelValue:'model', modelId:'modelCatalogId', modelMenu:'modelSuggestions', modelHelp:'modelHelp',
@@ -23,7 +41,7 @@
     const items=[];
     if(state.vehicleType) items.push(`<span><small>VEÍCULO</small><strong>${vehicle||categoryLabel()}</strong></span>`);
     if(state.service) items.push(`<span><small>SERVIÇO</small><strong>${state.service.name}</strong></span>`);
-    if(state.service) items.push(`<span><small>VALOR</small><strong class="gold-text">${PH.brl(state.service.price)}</strong></span>`);
+    if(state.service) items.push(`<span><small>VALOR</small><strong class="gold-text">${itemPriceText(state.service)}</strong></span>`);
     if($('appointmentDate')?.value) items.push(`<span><small>DATA</small><strong>${formatDateBR($('appointmentDate').value)}</strong></span>`);
     if(state.slot) items.push(`<span><small>HORÁRIO</small><strong>${state.slot}</strong></span>`);
     el.innerHTML=items.join(''); el.hidden=!items.length;
@@ -124,7 +142,7 @@
     const g=$('servicesGrid'); g.innerHTML=''; state.service=null; $('serviceId').value='';
     state.services.forEach(s=>{
       const d=document.createElement('button'); d.type='button'; d.className='service-card'; d.dataset.serviceId=s.id;
-      d.innerHTML=`<span class="service-selected-mark" aria-hidden="true">✓</span><div class="service-card-top"><span class="pill">${state.category==='moto'?'MOTO':state.category==='car_large'?'CARRO GRANDE':'CARRO PEQ./MÉDIO'}</span><span class="service-icon">${serviceIcon(s.name)}</span></div><h3>${s.name}</h3><div class="price">${PH.brl(s.price)}</div><p>${s.description||''}</p><span class="duration-badge">◷ ${s.duration_minutes?`${s.duration_minutes} min`:'Duração a definir'}</span>`;
+      d.innerHTML=`<span class="service-selected-mark" aria-hidden="true">✓</span><div class="service-card-top"><span class="pill">${state.category==='moto'?'MOTO':state.category==='car_large'?'CARRO GRANDE':'CARRO PEQ./MÉDIO'}</span><span class="service-icon">${serviceIcon(s.name)}</span></div><h3>${s.name}</h3><div class="price">${itemPriceText(s)}</div><p>${s.description||''}</p><span class="duration-badge">◷ ${s.duration_minutes?`${s.duration_minutes} min`:'Duração a definir'}</span>`;
       d.onclick=()=>{
         state.service=s; $('serviceId').value=s.id; state.slot=''; $('appointmentTime').value=''; clearAppointmentDate();
         [...g.children].forEach(x=>x.classList.remove('selected')); d.classList.add('selected');
@@ -140,7 +158,7 @@
     if(!state.extras.length){g.innerHTML='<div class="notice">Nenhum adicional cadastrado para esta categoria.</div>'; updateTotal(); return;}
     state.extras.forEach(e=>{
       const l=document.createElement('label'); l.className='check';
-      l.innerHTML=`<input type="checkbox" value="${e.id}"><span>${e.name}${e.price==null?' · preço a definir':` · + ${PH.brl(e.price)}`}</span>`;
+      l.innerHTML=`<input type="checkbox" value="${e.id}"><span><b>${e.name}</b><small class="extra-price">${itemPriceText(e,true)}</small>${e.description?`<small class="extra-description">${e.description}</small>`:''}</span>`;
       const cb=l.querySelector('input');
       cb.onchange=()=>{cb.checked?state.extraIds.add(e.id):state.extraIds.delete(e.id);$('extrasInput').value=[...state.extraIds].join(',');updateTotal();};
       g.appendChild(l);
@@ -148,9 +166,9 @@
   }
 
   function updateTotal(){
-    let total=state.service?Number(state.service.price):0,pending=0;
-    state.extras.filter(e=>state.extraIds.has(e.id)).forEach(e=>{if(e.price==null)pending++;else total+=Number(e.price)});
-    $('liveTotal').textContent=PH.brl(total); $('pendingPrices').textContent=pending?`${pending} adicional(is) com valor ainda a confirmar.`:'';
+    const info=currentEstimate();
+    $('liveTotal').textContent=`${info.variable?'A partir de ':''}${PH.brl(info.total)}`;
+    $('pendingPrices').textContent=info.pending?`${info.pending} adicional(is) sob avaliação. O valor não está incluído nesta estimativa.`:(info.variable?'Valor inicial sujeito à avaliação do estado do veículo.':'');
   }
 
   function renderConditions(){
@@ -174,7 +192,10 @@
   function updateRecommendation(){
     const level=Number($('dirtLevel').value||1); let rec='';
     if(state.service&&/Simples/i.test(state.service.name)&&level>=3){
-      const better=state.services.find(s=>/Detalhada/i.test(s.name)); if(better)rec=`Pelo estado informado do seu veículo, ${better.name} pode ser mais indicada. Você continua no controle da escolha.`;
+      const better=state.services.find(s=>/Detalhada/i.test(s.name));
+      rec=`O nível de sujeira informado está acima do padrão de uma lavagem simples. O valor pode precisar de ajuste após avaliação${better?`, e ${better.name} pode ser mais indicada`:''}. Qualquer alteração deve ser confirmada antes do serviço.`;
+    } else if(level>=4){
+      rec='O veículo foi informado como muito sujo. A equipe fará a avaliação do estado interno e externo antes de confirmar o valor final.';
     } $('recommendation').textContent=rec;
   }
 
@@ -252,9 +273,11 @@
 
   function renderSummary(){
     const selectedExtras=state.extras.filter(e=>state.extraIds.has(e.id)); const selectedConditions=state.conditionsList.filter(c=>state.conditionIds.has(Number(c.id)));
-    let total=state.service?Number(state.service.price):0;selectedExtras.forEach(e=>{if(e.price!=null)total+=Number(e.price)});
+    const info=currentEstimate();
     const dateBR=formatDateBR($('appointmentDate').value||'');
-    const html=`<div><span>Veículo</span><strong>${$('brand').value} ${$('model').value}</strong></div><div><span>Categoria</span><strong>${categoryLabel()}</strong></div><div><span>Serviço</span><strong>${state.service?.name||'—'}</strong></div><div><span>Adicionais</span><strong>${selectedExtras.length?selectedExtras.map(e=>e.name).join(', '):'Nenhum'}</strong></div><div><span>Condição</span><strong>${selectedConditions.length?selectedConditions.map(c=>c.label).join(', '):'Não informada'}</strong></div><div><span>Data</span><strong>${dateBR}</strong></div><div><span>Horário</span><strong>${state.slot||'—'}</strong></div><div><span>Forma de pagamento</span><strong>${paymentText()}</strong></div><div><span>Total estimado</span><strong>${PH.brl(total)}</strong></div>`;
+    const extrasText=selectedExtras.length?selectedExtras.map(e=>`${e.name} (${itemPriceText(e)})`).join(', '):'Nenhum';
+    const priceText=`${info.variable?'A partir de ':''}${PH.brl(info.total)}${info.pending?` + ${info.pending} item(ns) sob avaliação`:''}`;
+    const html=`<div><span>Veículo</span><strong>${$('brand').value} ${$('model').value}</strong></div><div><span>Categoria</span><strong>${categoryLabel()}</strong></div><div><span>Serviço</span><strong>${state.service?.name||'—'} · ${state.service?itemPriceText(state.service):''}</strong></div><div><span>Adicionais</span><strong>${extrasText}</strong></div><div><span>Condição</span><strong>${selectedConditions.length?selectedConditions.map(c=>c.label).join(', '):'Não informada'}</strong></div><div><span>Data</span><strong>${dateBR}</strong></div><div><span>Horário</span><strong>${state.slot||'—'}</strong></div><div><span>Forma de pagamento</span><strong>${paymentText()}</strong></div><div><span>Estimativa inicial</span><strong>${priceText}</strong></div>`;
     $('bookingSummary').innerHTML=html;$('finalSummary').innerHTML=html;
   }
 
