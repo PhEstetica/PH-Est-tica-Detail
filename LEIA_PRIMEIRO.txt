@@ -1,19 +1,26 @@
-PH ESTÉTICA & DETAIL — V13.6
-AGENDA SEMANAL FACILITADA
+PH ESTÉTICA & DETAIL — V13.7
 
-Novidades:
-- Horário padrão aplicado a vários dias de uma vez.
-- Atalhos Seg–Sex, Seg–Sáb e Todos.
-- Semana inteira editável com apenas um botão Salvar.
-- Seletor nativo de horário (no celular abre como seletor de hora/despertador).
-- Calendário nativo para bloqueio de datas.
-- Atalhos Hoje, Amanhã e Daqui 7 dias para bloqueios.
-- Mantém horários individuais para exceções.
-- Nenhuma alteração no banco é necessária e nenhum dado existente é apagado.
+NOVIDADES
+1. Instagram direto no site
+- O campo Instagram já existente em Admin > Configurações > Identidade e contato agora é usado no site.
+- Aceita @usuario, usuario, instagram.com/usuario ou URL completa.
+- Quando preenchido, aparece link no menu do PC, bloco "Seguir no Instagram" na home e botão Instagram no CTA final.
 
-Atualização no GitHub/Render:
-1. Faça backup do sistema.
-2. Extraia o ZIP de atualização.
-3. Envie app.py, templates/ e static/ mantendo essas pastas no GitHub.
-4. Confirme o commit.
-5. No Render use Manual Deploy > Deploy latest commit, caso o deploy automático não inicie.
+2. Cliente já cadastrado internamente + primeiro acesso pelo site
+- O vínculo usa o WhatsApp/telefone normalizado.
+- Se o número for o mesmo, NÃO cria outro cliente.
+- O novo acesso é ligado ao cadastro interno já existente.
+- Veículos e atendimentos anteriores continuam no mesmo histórico.
+- O cliente recebe um aviso na Minha Garagem informando que o cadastro anterior foi encontrado e vinculado.
+- Se o cliente usar outro número de telefone, o sistema não tenta unir automaticamente para evitar vincular pessoas erradas.
+
+ATUALIZAÇÃO NO GITHUB
+Envie mantendo as pastas:
+- app.py
+- templates/base.html
+- templates/home.html
+- templates/garage.html
+- templates/admin_settings.html
+- static/style.css
+
+Não substitua ph_estetica.db.

@@ -1,5 +1,9 @@
-# PH ESTÉTICA & DETAIL — V13.5.1
+# PH ESTÉTICA & DETAIL — Atualização V13.7
 
-Hotfix consolidado para garantir que as alterações de Configurações da V13.4 e os recursos da V13.5 sejam enviados juntos ao GitHub/Render.
+Inclui:
+- botão/bloco para Instagram configurado em Admin > Configurações > Identidade e contato;
+- reconhecimento de cliente já cadastrado internamente pelo mesmo WhatsApp no primeiro cadastro pelo site;
+- vínculo ao mesmo cadastro, veículos e histórico;
+- aviso visual na Minha Garagem quando o vínculo acontece.
 
-**Importante:** este pacote não inclui `ph_estetica.db`, backups ou uploads de usuário.
+No GitHub, envie `app.py` e as pastas `templates` e `static` mantendo os caminhos. Não envie/substitua `ph_estetica.db`.

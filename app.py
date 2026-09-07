@@ -490,6 +490,21 @@ def current_whatsapp_number(conn=None):
     return re.sub(r"\D", "", get_company_settings(conn).get("whatsapp_number") or WHATSAPP_NUMBER) or WHATSAPP_NUMBER
 
 
+def build_instagram_url(value: Optional[str]) -> str:
+    """Aceita @usuario, usuario, instagram.com/usuario ou URL completa."""
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    if raw.startswith("http://") or raw.startswith("https://"):
+        return raw
+    if "instagram.com/" in raw.lower():
+        return "https://" + raw.lstrip("/")
+    handle = raw.lstrip("@").strip().strip("/")
+    if not handle:
+        return ""
+    return "https://www.instagram.com/" + urllib.parse.quote(handle, safe="._-") + "/"
+
+
 def create_daily_backup(force=False):
     if not DB_PATH.exists():
         return None
@@ -1667,6 +1682,7 @@ def template_ctx(request: Request, **kwargs):
         "business_name": BUSINESS_NAME,
         "whatsapp_display": display,
         "whatsapp_number": wa,
+        "instagram_url": build_instagram_url(company.get("instagram")),
         "customer": current_customer(request),
         "status_labels": STATUS_LABELS,
         "brl": brl,
@@ -2141,7 +2157,11 @@ def register(request: Request, name: str = Form(...), phone: str = Form(...), pi
             return templates.TemplateResponse(request, "login.html", template_ctx(request, error="Este telefone já possui acesso."), status_code=409)
         ucur = conn.execute("INSERT INTO users(role,phone,pin_hash,created_at) VALUES ('customer',?,?,?)", (p,hash_pin(pin),now_iso()))
         existing = conn.execute("SELECT * FROM customers WHERE phone=?", (p,)).fetchone()
+        linked_existing = bool(existing)
         if existing:
+            # Se o cliente já foi cadastrado internamente/retroativamente, o primeiro
+            # acesso pelo site é vinculado ao MESMO cadastro pelo WhatsApp normalizado.
+            # Assim veículos, atendimentos e histórico anteriores continuam no mesmo perfil.
             conn.execute("UPDATE customers SET user_id=?, name=? WHERE id=?", (ucur.lastrowid,name.strip(),existing["id"]))
             cid = existing["id"]
         else:
@@ -2149,7 +2169,7 @@ def register(request: Request, name: str = Form(...), phone: str = Form(...), pi
             cid = ccur.lastrowid
         conn.commit()
     request.session["customer_id"] = cid
-    return RedirectResponse("/garagem", 303)
+    return RedirectResponse("/garagem?linked=1" if linked_existing else "/garagem?welcome=1", 303)
 
 
 @app.post("/login")
