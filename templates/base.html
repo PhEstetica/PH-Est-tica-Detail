@@ -4,22 +4,55 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>{% block title %}PH ESTÉTICA & DETAIL{% endblock %}</title>
-  <meta name="theme-color" content="#0b0b0d">
+  <meta name="theme-color" content="#08090b">
   <link rel="icon" href="{{brand_logo_url}}">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="/"><img src="{{brand_logo_url}}" alt="PH ESTÉTICA & DETAIL"><span>PH ESTÉTICA & DETAIL</span></a>
-  <nav class="desktop-nav">
-    <a href="/">Início</a><a href="/agendar">Agendar</a><a href="/garagem">Minha Garagem</a><a href="/acompanhar">Acompanhar</a>
+<header class="topbar topbar-v14" id="siteTopbar">
+  <div class="topbar-v14-inner">
+    <a class="brand brand-v14" href="/" aria-label="PH Estética & Detail - Início">
+      <span class="brand-v14-logo"><img src="{{brand_logo_url}}" alt="PH Estética & Detail"></span>
+      <span class="brand-v14-copy">
+        <strong><b>PH</b> <em>ESTÉTICA & DETAIL</em></strong>
+        <small>CUIDADOS AUTOMOTIVOS</small>
+      </span>
+    </a>
+
+    <nav class="desktop-nav desktop-nav-v14" aria-label="Navegação principal">
+      <a class="{% if request.url.path == '/' %}active{% endif %}" href="/">Início</a>
+      <a class="{% if request.url.path.startswith('/agendar') %}active{% endif %}" href="/agendar">Agendar</a>
+      <a class="{% if request.url.path.startswith('/garagem') %}active{% endif %}" href="/garagem">Minha Garagem</a>
+      <a class="{% if request.url.path.startswith('/acompanhar') %}active{% endif %}" href="/acompanhar">Acompanhar</a>
+      {% if instagram_url %}<a href="{{ instagram_url }}" target="_blank" rel="noopener">Instagram</a>{% endif %}
+      {% if customer %}
+        <a href="/historico">Histórico</a><a href="/notificacoes">Avisos</a><a href="/logout">Sair</a>
+      {% else %}
+        <a class="nav-login" href="/login">Entrar</a>
+      {% endif %}
+    </nav>
+
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-label="Abrir menu" aria-controls="mobileMenuPanel" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <nav class="mobile-menu-panel" id="mobileMenuPanel" aria-label="Navegação mobile">
+    <a href="/">Início</a>
+    <a href="/agendar">Agendar</a>
+    <a href="/garagem">Minha Garagem</a>
+    <a href="/acompanhar">Acompanhar</a>
     {% if instagram_url %}<a href="{{ instagram_url }}" target="_blank" rel="noopener">Instagram</a>{% endif %}
-    {% if customer %}<a href="/historico">Histórico</a><a href="/notificacoes">Avisos</a><a href="/logout">Sair</a>{% else %}<a href="/login">Entrar</a>{% endif %}
+    {% if customer %}
+      <a href="/historico">Histórico</a><a href="/notificacoes">Avisos</a><a href="/logout">Sair</a>
+    {% else %}
+      <a href="/login">Entrar</a>
+    {% endif %}
   </nav>
 </header>
 <main>{% block content %}{% endblock %}</main>
 <a class="whatsapp-float" target="_blank" rel="noopener" href="https://wa.me/{{ whatsapp_number }}?text=Olá!%20Vim%20pelo%20site%20da%20PH%20ESTÉTICA%20%26%20DETAIL.">WhatsApp</a>
-<nav class="mobile-nav">
+<nav class="mobile-nav legacy-mobile-nav" aria-hidden="true">
   <a href="/">Início</a><a class="primary" href="/agendar">Agendar</a><a href="/garagem">Garagem</a><a href="/acompanhar">Acompanhar</a><a href="{% if customer %}/notificacoes{% else %}/login{% endif %}">Perfil</a>
 </nav>
 <script src="/static/app.js"></script>

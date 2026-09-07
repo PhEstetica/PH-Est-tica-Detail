@@ -1,111 +1,151 @@
 {% extends 'base.html' %}
 {% block content %}
-<section class="hero shell home-hero photo-hero">
-  <div class="hero-copy hero-panel">
-    <div class="eyebrow">{{home_company.home_eyebrow}}</div>
-    <h1>{{home_company.home_headline}}</h1>
-    <p>{{home_company.home_subtitle}}</p>
-    <div class="actions">
-      <a class="btn gold" href="/agendar">Agendar agora</a>
-      <a class="btn ghost" href="#servicos">Ver serviços</a>
-      <a class="btn ghost" href="#depoimentos">Avaliações</a>
-    </div>
-    <div class="hero-stats">
-      <article><span>PRÓXIMO HORÁRIO</span>{% if upcoming %}<strong>{{ fmt_date(upcoming.date) }} às {{ upcoming.time }}</strong>{% else %}<strong>Agenda aguardando configuração</strong>{% endif %}</article>
-      <article><span>AVALIAÇÕES</span><strong>{% if review_stats and review_stats.total %}{{ '%.1f'|format(review_stats.avg_rating or 0)|replace('.', ',') }} ★{% else %}Seja o primeiro{% endif %}</strong></article>
-      <article><span>ATENDIMENTOS FINALIZADOS</span><strong>{{ total_services or 0 }}</strong></article>
-    </div>
-  </div>
-  <div class="hero-visual">
-    <div class="photo-showcase">
-      <img src="{{home_company.home_hero_image_url}}" alt="Estética automotiva - imagem ilustrativa" loading="eager">
-      <div class="photo-showcase-overlay">
-        <img class="photo-brand" src="{{brand_logo_url}}" alt="PH Estética & Detail">
-        <span>IMAGEM ILUSTRATIVA</span>
-        <strong>Cuidado automotivo com apresentação premium.</strong>
+<div class="home-v14">
+  <section class="hero-v14">
+    <div class="shell hero-v14-grid">
+      <div class="hero-v14-copy">
+        <div class="eyebrow hero-v14-eyebrow">{{home_company.home_eyebrow}}</div>
+        {% set headline = home_company.home_headline or 'Mais que uma lavagem. Um cuidado completo.' %}
+        {% set headline_parts = headline.split('Um cuidado', 1) %}
+        <h1 class="hero-v14-title">
+          {% if headline_parts|length == 2 %}
+            <span>{{ headline_parts[0]|trim }}</span>
+            <strong>Um cuidado{{ headline_parts[1] }}</strong>
+          {% else %}
+            <span>{{ headline }}</span>
+          {% endif %}
+        </h1>
+        <p class="hero-v14-subtitle">{{home_company.home_subtitle}}</p>
+
+        <div class="actions hero-v14-actions">
+          <a class="btn gold hero-primary" href="/agendar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 9h3v3H8v-3Z"/></svg>
+            <span>Agendar agora</span><b>→</b>
+          </a>
+          <a class="btn ghost hero-secondary" href="#servicos"><span>Ver serviços</span><b>→</b></a>
+        </div>
+
+        <div class="hero-v14-benefits" aria-label="Diferenciais PH">
+          <div class="hero-benefit">
+            <span class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.7 3.1 7.9 7.5 9.5 4.4-1.6 7.5-4.8 7.5-9.5V6L12 3Zm-3 9 2 2 4-5"/></svg></span>
+            <span><b>Qualidade</b><small>técnica</small></span>
+          </div>
+          <div class="hero-benefit">
+            <span class="benefit-icon"><svg viewBox="0 0 24 24"><path d="m12 3 7 8-7 10-7-10 7-8Zm-7 8h14M9 3l3 8 3-8M9 21l3-10 3 10"/></svg></span>
+            <span><b>Atendimento</b><small>personalizado</small></span>
+          </div>
+          <div class="hero-benefit">
+            <span class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 21v-4c0-2.8 2.7-5 6-5s6 2.2 6 5v4M14 13c.6-.3 1.3-.5 2-.5 3 0 5.5 2 5.5 4.5v4"/></svg></span>
+            <span><b>Paixão por</b><small>detalhes</small></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-v14-media">
+        <div class="hero-media-frame">
+          <img class="hero-media-photo" src="{{home_company.home_hero_image_url}}" alt="Estética automotiva - imagem ilustrativa" loading="eager">
+          <div class="hero-media-shade"></div>
+          <div class="hero-media-brandmark"><img src="{{brand_logo_url}}" alt="PH Estética & Detail"></div>
+          <div class="hero-media-copy">
+            <span>IMAGEM ILUSTRATIVA</span>
+            <strong>Sua paixão, sempre bem cuidada.</strong>
+            <small>Brilho • Proteção • Cuidado</small>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="shell section" id="servicos">
-  <div class="section-head"><span>SERVIÇOS</span><h2>Escolha o cuidado certo para o seu veículo.</h2><p>Os preços abaixo vêm do painel administrativo e mudam conforme a categoria do veículo.</p></div>
-  <div class="notice gold-notice pricing-evaluation-notice"><b>Valores transparentes:</b> quando aparecer “A partir de”, o valor é inicial e pode variar conforme o estado interno e externo, nível de sujeira e tempo necessário. O valor final é confirmado após avaliação.</div>
-  <div class="grid-3">
-    {% for s in home_services %}
-    <article class="card service-home-card"><span class="pill">{% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %}</span><h3>{{s.name}}</h3><p>{{s.description}}</p><strong class="home-price">{{price_display(s.price, s.price_mode)}}</strong><a class="btn ghost" href="/agendar">Escolher</a></article>
-    {% endfor %}
-  </div>
-</section>
-
-<section class="shell section photo-story-section">
-  <div class="section-head"><span>CARROS E MOTOS</span><h2>Uma apresentação que combina com o cuidado.</h2><p>Enquanto a PH constrói sua galeria própria, estas imagens são apenas ilustrativas e podem ser trocadas pelo painel administrativo.</p></div>
-  <div class="photo-story-grid">
-    <article class="photo-story-card">
-      <img src="{{home_company.home_car_image_url}}" alt="Lavagem de carro - imagem ilustrativa" loading="lazy">
-      <div><span>CARROS</span><h3>Lavagem com atenção ao acabamento</h3><p>Uma experiência visual mais forte desde o primeiro contato com a marca.</p><small>Imagem ilustrativa</small></div>
+  <section class="shell hero-metrics-v14" aria-label="Resumo da PH">
+    <article class="metric-v14-card">
+      <span class="metric-v14-icon"><svg viewBox="0 0 24 24"><path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 9h3v3H8v-3Z"/></svg></span>
+      <div><span>PRÓXIMO HORÁRIO</span>{% if upcoming %}<strong>{{ fmt_date(upcoming.date) }} às {{ upcoming.time }}</strong><small>Garanta seu atendimento.</small>{% else %}<strong>Agenda em configuração</strong><small>Consulte os próximos horários.</small>{% endif %}</div><b>›</b>
     </article>
-    <article class="photo-story-card reverse">
-      <img src="{{home_company.home_moto_image_url}}" alt="Lavagem de moto - imagem ilustrativa" loading="lazy">
-      <div><span>MOTOS</span><h3>Cuidados específicos para motos</h3><p>Serviços, adicionais e comunicação separados dos carros.</p><small>Imagem ilustrativa</small></div>
+    <article class="metric-v14-card">
+      <span class="metric-v14-icon"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg></span>
+      <div><span>AVALIAÇÕES</span><strong>{% if review_stats and review_stats.total %}{{ '%.1f'|format(review_stats.avg_rating or 0)|replace('.', ',') }} ★{% else %}Seja o primeiro{% endif %}</strong><small>Faça parte dessa história.</small></div><b>›</b>
     </article>
-  </div>
-</section>
+    <article class="metric-v14-card">
+      <span class="metric-v14-icon"><svg viewBox="0 0 24 24"><path d="M4 20V10h4v10H4Zm6 0V4h4v16h-4Zm6 0v-7h4v7h-4Z"/></svg></span>
+      <div><span>ATENDIMENTOS FINALIZADOS</span><strong>{{ total_services or 0 }}</strong><small>Veículos que confiaram em nós.</small></div><b>›</b>
+    </article>
+  </section>
 
-<section class="shell section">
-  <div class="section-head"><span>COMO FUNCIONA</span><h2>Seu veículo com histórico de cuidados aqui.</h2><p>Para o cliente, simples. Para a operação, organizado.</p></div>
-  <div class="grid-4">
-    <article class="card feature-card"><b>01</b><h3>Escolha o veículo</h3><p>Carro ou moto, com serviços e adicionais compatíveis.</p></article>
-    <article class="card feature-card"><b>02</b><h3>Conte como está</h3><p>Informe a condição e envie fotos para ajudar na avaliação.</p></article>
-    <article class="card feature-card"><b>03</b><h3>Agende</h3><p>Escolha somente horários realmente disponíveis.</p></article>
-    <article class="card feature-card"><b>04</b><h3>Acompanhe</h3><p>Veja o andamento, fotos e resultado final do atendimento.</p></article>
-  </div>
-</section>
-
-<section class="shell section detail-photo-section">
-  <div class="detail-photo-grid">
-    <figure><img src="{{home_company.home_detail_image_url}}" alt="Detalhe de acabamento automotivo - imagem ilustrativa" loading="lazy"><figcaption><span>DETALHES</span><strong>Brilho, água e acabamento</strong><small>Imagem ilustrativa</small></figcaption></figure>
-    <figure><img src="{{home_company.home_moto_detail_image_url}}" alt="Detalhe de moto - imagem ilustrativa" loading="lazy"><figcaption><span>MOTOS</span><strong>O cuidado aparece nos detalhes</strong><small>Imagem ilustrativa</small></figcaption></figure>
-  </div>
-</section>
-
-{% if gallery %}
-<section class="shell section" id="galeria">
-  <div class="section-head"><span>GALERIA REAL</span><h2>{{home_company.home_gallery_title}}</h2><p>Fotos adicionadas pela própria PH ESTÉTICA & DETAIL.</p></div>
-  <div class="gallery-home-grid">
-    {% for item in gallery %}<figure class="gallery-home-item"><img src="/uploads/{{item.image_path}}" alt="{{item.title or 'Trabalho PH Estética & Detail'}}"><figcaption><strong>{{item.title or 'PH ESTÉTICA & DETAIL'}}</strong>{% if item.caption %}<span>{{item.caption}}</span>{% endif %}</figcaption></figure>{% endfor %}
-  </div>
-</section>
-{% else %}
-<section class="shell section" id="galeria">
-  <div class="section-head"><span>INSPIRAÇÃO VISUAL</span><h2>{{home_company.home_gallery_title}}</h2><p>Imagens ilustrativas temporárias. Assim que você cadastrar fotos reais em <b>Admin → Galeria</b>, esta vitrine é substituída automaticamente.</p></div>
-  <div class="illustrative-gallery">
-    <figure><img src="{{home_company.home_car_image_url}}" alt="Lavagem automotiva ilustrativa"><figcaption>Carros <small>Imagem ilustrativa</small></figcaption></figure>
-    <figure><img src="{{home_company.home_detail_image_url}}" alt="Detalhamento automotivo ilustrativo"><figcaption>Acabamento <small>Imagem ilustrativa</small></figcaption></figure>
-    <figure><img src="{{home_company.home_moto_detail_image_url}}" alt="Moto em destaque ilustrativo"><figcaption>Motos <small>Imagem ilustrativa</small></figcaption></figure>
-  </div>
-</section>
-{% endif %}
-
-{% if promos %}<section class="shell section"><div class="section-head"><span>CAMPANHAS</span><h2>Novidades da PH</h2></div><div class="grid-3">{% for p in promos %}<article class="card"><h3>{{p.title}}</h3><p>{{p.description}}</p></article>{% endfor %}</div></section>{% endif %}
-
-{% if instagram_url %}
-<section class="shell section instagram-follow-section">
-  <article class="card instagram-follow-card">
-    <div class="instagram-follow-copy">
-      <span class="instagram-kicker">INSTAGRAM</span>
-      <h2>Acompanhe os resultados da PH</h2>
-      <p>Veja trabalhos, antes e depois, novidades e acompanhe a PH ESTÉTICA & DETAIL também pelo Instagram.</p>
+  <section class="shell section section-v14" id="servicos">
+    <div class="section-head section-head-v14"><span>SERVIÇOS</span><h2>Escolha o cuidado certo para o seu veículo.</h2><p>Carros e motos com serviços organizados, valores claros e atendimento pensado para cada necessidade.</p></div>
+    <div class="notice gold-notice pricing-evaluation-notice"><b>Valores transparentes:</b> quando aparecer “A partir de”, o valor é inicial e pode variar conforme o estado interno e externo, nível de sujeira e tempo necessário. O valor final é confirmado após avaliação.</div>
+    <div class="grid-3 premium-service-grid">
+      {% for s in home_services %}
+      <article class="card service-home-card premium-service-card"><span class="pill">{% if s.category_code=='moto' %}MOTO{% elif s.category_code=='car_small' %}CARRO PEQ./MÉDIO{% else %}CARRO GRANDE{% endif %}</span><h3>{{s.name}}</h3><p>{{s.description}}</p><strong class="home-price">{{price_display(s.price, s.price_mode)}}</strong><a class="btn ghost" href="/agendar">Escolher serviço <b>→</b></a></article>
+      {% endfor %}
     </div>
-    <a class="btn instagram-btn" href="{{ instagram_url }}" target="_blank" rel="noopener">Seguir no Instagram</a>
-  </article>
-</section>
-{% endif %}
+  </section>
 
-<section class="shell section" id="depoimentos">
-  <div class="section-head"><span>AVALIAÇÕES</span><h2>Experiências de quem já cuidou do veículo aqui.</h2><p>Somente avaliações que o cliente autorizou e que estão visíveis no painel aparecem nesta área.</p></div>
-  {% if reviews %}<div class="testimonial-grid">{% for r in reviews %}<article class="card testimonial-card"><div class="stars">{% for i in range(r.rating) %}★{% endfor %}{% for i in range(5-r.rating) %}<span>★</span>{% endfor %}</div><p>“{{ r.comment }}”</p><div class="review-meta"><strong>{{ first_name(r.customer_name) }}</strong><span>{{ r.brand }} {{ r.model }}</span></div></article>{% endfor %}</div>{% else %}<div class="notice">Ainda não existem avaliações publicadas.</div>{% endif %}
-</section>
+  <section class="shell section section-v14 photo-story-section">
+    <div class="section-head section-head-v14"><span>CARROS E MOTOS</span><h2>Uma apresentação à altura do cuidado.</h2><p>Ambientes, detalhes e acabamento que fazem a experiência começar antes mesmo do atendimento.</p></div>
+    <div class="photo-story-grid premium-story-grid">
+      <article class="photo-story-card premium-story-card">
+        <img src="{{home_company.home_car_image_url}}" alt="Lavagem de carro - imagem ilustrativa" loading="lazy">
+        <div><span>CARROS</span><h3>Cuidado que valoriza cada detalhe.</h3><p>Lavagem, proteção e acabamento com uma experiência visual mais forte desde o primeiro contato.</p><a class="btn ghost" href="/agendar">Agendar carro →</a><small>Imagem ilustrativa</small></div>
+      </article>
+      <article class="photo-story-card reverse premium-story-card">
+        <img src="{{home_company.home_moto_image_url}}" alt="Lavagem de moto - imagem ilustrativa" loading="lazy">
+        <div><span>MOTOS</span><h3>Tratamento específico para a sua moto.</h3><p>Serviços pensados para motor, relação, rodas, escapamento, carenagens e os detalhes que exigem mais atenção.</p><a class="btn ghost" href="/agendar">Agendar moto →</a><small>Imagem ilustrativa</small></div>
+      </article>
+    </div>
+  </section>
 
-<section class="shell section cta-band"><div class="card cta-card"><div><div class="eyebrow">PH ESTÉTICA & DETAIL</div><h2>Seu próximo cuidado pode ser agendado agora.</h2><p>Escolha carro ou moto e reserve um horário disponível.</p></div><div class="actions"><a class="btn gold" href="/agendar">AGENDAR AGORA</a><a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/{{whatsapp_number}}">WHATSAPP</a>{% if instagram_url %}<a class="btn ghost" target="_blank" rel="noopener" href="{{ instagram_url }}">INSTAGRAM</a>{% endif %}</div></div></section>
+  <section class="shell section section-v14 process-v14-section">
+    <div class="section-head section-head-v14"><span>COMO FUNCIONA</span><h2>Do agendamento à entrega, tudo mais simples.</h2><p>O cliente acompanha o cuidado e a PH mantém todo o histórico organizado.</p></div>
+    <div class="grid-4 process-v14-grid">
+      <article class="card feature-card process-v14-card"><b>01</b><h3>Escolha o veículo</h3><p>Carro ou moto, com serviços e adicionais compatíveis.</p></article>
+      <article class="card feature-card process-v14-card"><b>02</b><h3>Conte como está</h3><p>Informe a condição e envie fotos para ajudar na avaliação.</p></article>
+      <article class="card feature-card process-v14-card"><b>03</b><h3>Agende</h3><p>Escolha somente horários realmente disponíveis.</p></article>
+      <article class="card feature-card process-v14-card"><b>04</b><h3>Acompanhe</h3><p>Veja o andamento, fotos e resultado final do atendimento.</p></article>
+    </div>
+  </section>
+
+  <section class="shell section section-v14 detail-photo-section">
+    <div class="detail-photo-grid premium-detail-grid">
+      <figure><img src="{{home_company.home_detail_image_url}}" alt="Detalhe de acabamento automotivo - imagem ilustrativa" loading="lazy"><figcaption><span>DETALHES</span><strong>Brilho, proteção e acabamento.</strong><small>Imagem ilustrativa</small></figcaption></figure>
+      <figure><img src="{{home_company.home_moto_detail_image_url}}" alt="Detalhe de moto - imagem ilustrativa" loading="lazy"><figcaption><span>MOTOS</span><strong>O cuidado aparece nos detalhes.</strong><small>Imagem ilustrativa</small></figcaption></figure>
+    </div>
+  </section>
+
+  {% if gallery %}
+  <section class="shell section section-v14" id="galeria">
+    <div class="section-head section-head-v14"><span>GALERIA REAL</span><h2>{{home_company.home_gallery_title}}</h2><p>Fotos adicionadas pela própria PH ESTÉTICA & DETAIL.</p></div>
+    <div class="gallery-home-grid premium-gallery-grid">
+      {% for item in gallery %}<figure class="gallery-home-item"><img src="/uploads/{{item.image_path}}" alt="{{item.title or 'Trabalho PH Estética & Detail'}}"><figcaption><strong>{{item.title or 'PH ESTÉTICA & DETAIL'}}</strong>{% if item.caption %}<span>{{item.caption}}</span>{% endif %}</figcaption></figure>{% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <section class="shell section section-v14" id="galeria">
+    <div class="section-head section-head-v14"><span>INSPIRAÇÃO VISUAL</span><h2>{{home_company.home_gallery_title}}</h2><p>Imagens ilustrativas temporárias. As fotos reais cadastradas pela PH substituem esta vitrine automaticamente.</p></div>
+    <div class="illustrative-gallery premium-illustrative-gallery">
+      <figure><img src="{{home_company.home_car_image_url}}" alt="Lavagem automotiva ilustrativa"><figcaption>Carros <small>Imagem ilustrativa</small></figcaption></figure>
+      <figure><img src="{{home_company.home_detail_image_url}}" alt="Detalhamento automotivo ilustrativo"><figcaption>Acabamento <small>Imagem ilustrativa</small></figcaption></figure>
+      <figure><img src="{{home_company.home_moto_detail_image_url}}" alt="Moto em destaque ilustrativo"><figcaption>Motos <small>Imagem ilustrativa</small></figcaption></figure>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if promos %}<section class="shell section section-v14"><div class="section-head section-head-v14"><span>CAMPANHAS</span><h2>Novidades da PH</h2></div><div class="grid-3">{% for p in promos %}<article class="card premium-service-card"><h3>{{p.title}}</h3><p>{{p.description}}</p></article>{% endfor %}</div></section>{% endif %}
+
+  {% if instagram_url %}
+  <section class="shell section section-v14 instagram-follow-section">
+    <article class="card instagram-follow-card instagram-follow-v14">
+      <div class="instagram-follow-copy"><span class="instagram-kicker">INSTAGRAM</span><h2>Acompanhe os resultados da PH</h2><p>Veja trabalhos, antes e depois, novidades e acompanhe a PH ESTÉTICA & DETAIL também pelo Instagram.</p></div>
+      <a class="btn instagram-btn" href="{{ instagram_url }}" target="_blank" rel="noopener">Seguir no Instagram →</a>
+    </article>
+  </section>
+  {% endif %}
+
+  <section class="shell section section-v14" id="depoimentos">
+    <div class="section-head section-head-v14"><span>AVALIAÇÕES</span><h2>Experiências de quem já cuidou do veículo aqui.</h2><p>Somente avaliações autorizadas pelo cliente aparecem nesta área.</p></div>
+    {% if reviews %}<div class="testimonial-grid">{% for r in reviews %}<article class="card testimonial-card premium-testimonial-card"><div class="stars">{% for i in range(r.rating) %}★{% endfor %}{% for i in range(5-r.rating) %}<span>★</span>{% endfor %}</div><p>“{{ r.comment }}”</p><div class="review-meta"><strong>{{ first_name(r.customer_name) }}</strong><span>{{ r.brand }} {{ r.model }}</span></div></article>{% endfor %}</div>{% else %}<div class="notice premium-empty-review">Ainda não existem avaliações publicadas. Seja o primeiro a contar sua experiência.</div>{% endif %}
+  </section>
+
+  <section class="shell section cta-band cta-band-v14"><div class="card cta-card cta-card-v14"><div><div class="eyebrow">PH ESTÉTICA & DETAIL</div><h2>Seu próximo cuidado pode ser agendado agora.</h2><p>Escolha carro ou moto e reserve um horário disponível.</p></div><div class="actions"><a class="btn gold" href="/agendar">AGENDAR AGORA</a><a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/{{whatsapp_number}}">WHATSAPP</a>{% if instagram_url %}<a class="btn ghost" target="_blank" rel="noopener" href="{{ instagram_url }}">INSTAGRAM</a>{% endif %}</div></div></section>
+</div>
 {% endblock %}
