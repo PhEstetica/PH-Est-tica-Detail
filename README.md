@@ -307,3 +307,14 @@ O site público e, principalmente, o painel administrativo foram ajustados para 
 - download forçado em `.db`;
 - backups manuais com data/hora, sem sobrescrever o anterior;
 - cada backup listado pode ser baixado individualmente.
+
+
+## V13.3 — Persistent Disk / Render
+- Detecta automaticamente o Persistent Disk do Render quando montado em `/var/data`.
+- Banco persistente em `/var/data/ph_estetica.db`.
+- Uploads persistentes em `/var/data/uploads`.
+- Backups persistentes em `/var/data/backups`.
+- Continua funcionando localmente sem alterações.
+- Novo backup completo `.zip` (banco + uploads).
+- Nova restauração de backup `.db` ou `.zip` pelo painel Admin → Configurações.
+- Validação de integridade SQLite e backup de segurança automático antes de restaurar.

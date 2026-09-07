@@ -1,0 +1,25 @@
+PH ESTÉTICA & DETAIL — V13.3 PERSISTENT DISK
+
+OBJETIVO
+- No Render, quando existir um Persistent Disk montado em /var/data, o sistema usa automaticamente:
+  Banco: /var/data/ph_estetica.db
+  Fotos: /var/data/uploads
+  Backups: /var/data/backups
+- No PC/Windows continua usando os caminhos locais normais.
+
+MIGRAÇÃO SEGURA NO RENDER
+1. ANTES de criar/anexar o Persistent Disk, publique a V13.3 e entre em Admin > Configurações.
+2. Baixe "Backup completo (.zip)". Se você já tem o .db, guarde-o também.
+3. No Render, crie/anexe o Disk com Mount Path /var/data (10 GB pode ser usado).
+4. Faça Deploy latest commit novamente.
+5. Entre em Admin > Configurações. A tela deve mostrar "Persistent Disk ativo em /var/data".
+6. Em "Restaurar backup", envie primeiro o backup completo .zip (preferível) ou o .db que você já baixou.
+7. Aguarde a confirmação "Backup restaurado com sucesso".
+8. Confira clientes, agendamentos, financeiro e configurações.
+9. Só depois volte a cadastrar normalmente.
+
+IMPORTANTE
+- O .db salva os dados do banco, mas não contém as imagens físicas enviadas.
+- O .zip completo salva banco + uploads.
+- Antes de toda restauração, o sistema cria automaticamente um backup do banco atual.
+- O sistema aceita variáveis PH_DATA_DIR, PH_DB_PATH, PH_UPLOAD_DIR e PH_BACKUP_DIR se você quiser caminhos personalizados.

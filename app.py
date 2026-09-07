@@ -12,6 +12,7 @@ import urllib.request
 import json
 import time
 import unicodedata
+import zipfile
 from contextlib import closing, asynccontextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -24,11 +25,20 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = Path(os.getenv("PH_DB_PATH", str(BASE_DIR / "ph_estetica.db")))
-UPLOAD_DIR = Path(os.getenv("PH_UPLOAD_DIR", str(BASE_DIR / "uploads")))
-BACKUP_DIR = Path(os.getenv("PH_BACKUP_DIR", str(BASE_DIR / "backups")))
-UPLOAD_DIR.mkdir(exist_ok=True)
-BACKUP_DIR.mkdir(exist_ok=True)
+
+# V13.3: armazenamento persistente no Render.
+# Quando um Persistent Disk estiver montado em /var/data, o sistema passa
+# automaticamente a salvar banco, uploads e backups nele. No Windows/local,
+# continua usando a pasta normal do projeto, sem exigir nenhuma configuração.
+_render_disk = Path("/var/data")
+_use_render_disk = bool(os.getenv("RENDER")) and _render_disk.exists() and _render_disk.is_dir()
+DATA_DIR = Path(os.getenv("PH_DATA_DIR", str(_render_disk if _use_render_disk else BASE_DIR)))
+DB_PATH = Path(os.getenv("PH_DB_PATH", str(DATA_DIR / "ph_estetica.db")))
+UPLOAD_DIR = Path(os.getenv("PH_UPLOAD_DIR", str(DATA_DIR / "uploads")))
+BACKUP_DIR = Path(os.getenv("PH_BACKUP_DIR", str(DATA_DIR / "backups")))
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 WHATSAPP_NUMBER = "5538997238317"
 WHATSAPP_DISPLAY = "(38) 99723-8317"
@@ -3022,7 +3032,14 @@ def admin_settings_page(request: Request):
         company = get_company_settings(conn)
         logo_path = setting(conn, "brand_logo_path", "")
     backups = sorted(BACKUP_DIR.glob("ph_estetica_*.db"), key=lambda x:x.stat().st_mtime, reverse=True)[:10]
-    return templates.TemplateResponse(request, "admin_settings.html", template_ctx(request, settings=company, logo_path=logo_path, backups=backups))
+    storage_info = {
+        "data_dir": str(DATA_DIR),
+        "db_path": str(DB_PATH),
+        "upload_dir": str(UPLOAD_DIR),
+        "backup_dir": str(BACKUP_DIR),
+        "persistent": str(DATA_DIR).startswith("/var/data"),
+    }
+    return templates.TemplateResponse(request, "admin_settings.html", template_ctx(request, settings=company, logo_path=logo_path, backups=backups, storage_info=storage_info))
 
 
 @app.post("/admin/configuracoes")
@@ -3183,6 +3200,135 @@ def admin_backup_existing_download(request: Request, backup_name: str):
             "Cache-Control": "no-store, no-cache, must-revalidate",
         },
     )
+
+
+def _validate_sqlite_backup(path: Path):
+    """Valida se o arquivo enviado é um SQLite íntegro antes de substituir o banco ativo."""
+    if not path.exists() or path.stat().st_size < 100:
+        raise ValueError("Arquivo de backup vazio ou inválido.")
+    with path.open("rb") as fh:
+        if fh.read(16) != b"SQLite format 3\x00":
+            raise ValueError("O arquivo não é um banco SQLite válido.")
+    conn = sqlite3.connect(path)
+    try:
+        result = conn.execute("PRAGMA quick_check").fetchone()
+        if not result or str(result[0]).lower() != "ok":
+            raise ValueError("O banco enviado falhou na verificação de integridade.")
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        if "settings" not in tables or "appointments" not in tables:
+            raise ValueError("O arquivo não parece ser um backup do PH ESTÉTICA.")
+    finally:
+        conn.close()
+
+
+def _safe_extract_zip(zf: zipfile.ZipFile, destination: Path):
+    destination = destination.resolve()
+    for member in zf.infolist():
+        target = (destination / member.filename).resolve()
+        if destination != target and destination not in target.parents:
+            raise ValueError("Arquivo ZIP contém caminho inválido.")
+    zf.extractall(destination)
+
+
+@app.get("/admin/backup/completo")
+def admin_full_backup_download(request: Request):
+    """Gera ZIP com banco + uploads, ideal antes de migrar para Persistent Disk."""
+    _admin_required(request)
+    db_backup = create_daily_backup(force=True)
+    if not db_backup or not db_backup.exists():
+        raise HTTPException(500, "Não foi possível gerar o backup do banco.")
+    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    zip_path = BACKUP_DIR / f"ph_estetica_completo_{stamp}.zip"
+    try:
+        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.write(db_backup, "ph_estetica.db")
+            if UPLOAD_DIR.exists():
+                for item in UPLOAD_DIR.rglob("*"):
+                    if item.is_file():
+                        zf.write(item, str(Path("uploads") / item.relative_to(UPLOAD_DIR)))
+    except Exception as exc:
+        raise HTTPException(500, f"Não foi possível gerar o backup completo: {exc}")
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename=zip_path.name,
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+    )
+
+
+@app.post("/admin/backup/restaurar")
+async def admin_backup_restore(request: Request, backup: UploadFile = File(...)):
+    """Restaura .db ou backup completo .zip no armazenamento atualmente ativo."""
+    _admin_required(request)
+    original_name = Path(backup.filename or "backup").name
+    suffix = Path(original_name).suffix.lower()
+    if suffix not in {".db", ".zip"}:
+        return RedirectResponse("/admin/configuracoes?restore_error=tipo#backups", 303)
+
+    work_dir = BACKUP_DIR / f"restore_tmp_{secrets.token_hex(6)}"
+    work_dir.mkdir(parents=True, exist_ok=False)
+    uploaded = work_dir / ("backup" + suffix)
+    try:
+        total = 0
+        with uploaded.open("wb") as fh:
+            while True:
+                chunk = await backup.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > 500 * 1024 * 1024:
+                    raise ValueError("Backup maior que 500 MB.")
+                fh.write(chunk)
+
+        restore_db = uploaded
+        restore_uploads = None
+        if suffix == ".zip":
+            extract_dir = work_dir / "extracted"
+            extract_dir.mkdir()
+            with zipfile.ZipFile(uploaded, "r") as zf:
+                _safe_extract_zip(zf, extract_dir)
+            restore_db = extract_dir / "ph_estetica.db"
+            restore_uploads = extract_dir / "uploads"
+            if not restore_db.exists():
+                raise ValueError("O ZIP não contém ph_estetica.db.")
+
+        _validate_sqlite_backup(restore_db)
+
+        # Guarda uma cópia do banco que está ativo antes da restauração.
+        if DB_PATH.exists():
+            safety = BACKUP_DIR / f"antes_restauracao_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.db"
+            src = sqlite3.connect(DB_PATH)
+            dst = sqlite3.connect(safety)
+            try:
+                src.backup(dst)
+            finally:
+                dst.close(); src.close()
+
+        temp_db = DB_PATH.with_name(DB_PATH.name + ".restoring")
+        shutil.copy2(restore_db, temp_db)
+        os.replace(temp_db, DB_PATH)
+
+        if restore_uploads and restore_uploads.exists():
+            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            for item in restore_uploads.rglob("*"):
+                if item.is_file():
+                    rel = item.relative_to(restore_uploads)
+                    target = UPLOAD_DIR / rel
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(item, target)
+
+        # Aplica migrações da versão atual caso o backup seja de versão anterior.
+        init_db()
+        create_daily_backup(force=True)
+        return RedirectResponse("/admin/configuracoes?restored=1#backups", 303)
+    except Exception as exc:
+        code = urllib.parse.quote(str(exc)[:180])
+        return RedirectResponse(f"/admin/configuracoes?restore_error={code}#backups", 303)
+    finally:
+        try:
+            shutil.rmtree(work_dir, ignore_errors=True)
+        except Exception:
+            pass
 
 
 @app.get("/admin/lembretes", response_class=HTMLResponse)
