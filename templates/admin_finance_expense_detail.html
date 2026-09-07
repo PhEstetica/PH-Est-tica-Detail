@@ -1,0 +1,54 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head expense-page-head">
+  <div>
+    <span>FINANCEIRO · DESPESAS</span>
+    <h1>Detalhes da despesa</h1>
+    <p>Visualize todas as informações registradas neste lançamento.</p>
+  </div>
+  <div class="actions">
+    <a class="btn ghost" href="/admin/financeiro/despesas">Voltar</a>
+    <a class="btn gold" href="/admin/financeiro/despesas/{{expense.id}}/editar">Editar despesa</a>
+  </div>
+</div>
+
+{% if request.query_params.get('updated') %}
+<div class="notice expense-success-notice">Despesa atualizada com sucesso. Os resumos financeiros já usam os novos dados.</div>
+{% endif %}
+
+<section class="admin-section expense-detail-card">
+  <div class="expense-detail-title">
+    <div>
+      <span class="tab-kicker">LANÇAMENTO #{{expense.id}}</span>
+      <h2>{{expense.description}}</h2>
+    </div>
+    <span class="pill expense-status-{{expense.status}}">{{'PAGO' if expense.status=='paid' else 'PENDENTE'}}</span>
+  </div>
+
+  <div class="expense-detail-grid">
+    <article><span>Data</span><strong>{{fmt_date(expense.expense_date)}}</strong></article>
+    <article><span>Descrição</span><strong>{{expense.description}}</strong></article>
+    <article><span>Fornecedor</span><strong>{{expense.supplier or 'Não informado'}}</strong></article>
+    <article><span>Categoria</span><strong>{{expense.category_name}}</strong></article>
+    <article><span>Competência</span><strong>{{format_competence(expense.competence)}}</strong></article>
+    <article><span>Valor</span><strong class="expense-detail-value">{{brl(expense.amount)}}</strong></article>
+    <article><span>Vencimento</span><strong>{{fmt_date(expense.due_date) if expense.due_date else 'Não informado'}}</strong></article>
+    <article><span>Data do pagamento</span><strong>{{fmt_date(expense.paid_date) if expense.paid_date else 'Não pago'}}</strong></article>
+    <article><span>Forma de pagamento</span><strong>{{payment_label(expense.payment_method) if expense.payment_method else 'Não informada'}}</strong></article>
+    <article><span>Status</span><strong>{{'Pago' if expense.status=='paid' else 'Pendente'}}</strong></article>
+    <article class="expense-detail-wide"><span>Observações</span><strong>{{expense.notes or 'Nenhuma observação registrada.'}}</strong></article>
+    <article><span>Cadastrado em</span><strong>{{fmt_datetime(expense.created_at) if expense.created_at else '—'}}</strong></article>
+  </div>
+</section>
+
+<div class="expense-detail-actions">
+  {% if expense.status=='pending' %}
+  <form method="post" action="/admin/financeiro/despesas/{{expense.id}}/pagar">
+    <button class="btn gold">Marcar como pago</button>
+  </form>
+  {% endif %}
+  <form method="post" action="/admin/financeiro/despesas/{{expense.id}}/cancelar" onsubmit="return confirm('Cancelar este lançamento?')">
+    <button class="btn danger">Cancelar lançamento</button>
+  </form>
+</div>
+{% endblock %}

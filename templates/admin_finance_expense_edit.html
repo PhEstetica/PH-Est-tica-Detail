@@ -1,0 +1,73 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head expense-page-head">
+  <div>
+    <span>FINANCEIRO · DESPESAS</span>
+    <h1>Editar despesa</h1>
+    <p>Corrija qualquer informação lançada sem precisar cancelar e cadastrar novamente.</p>
+  </div>
+  <div class="actions">
+    <a class="btn ghost" href="/admin/financeiro/despesas/{{expense.id}}">Ver detalhes</a>
+    <a class="btn ghost" href="/admin/financeiro/despesas">Voltar</a>
+  </div>
+</div>
+
+<section class="admin-section expense-edit-card">
+  <form class="form-stack" method="post" action="/admin/financeiro/despesas/{{expense.id}}/editar">
+    <div class="form-grid">
+      <label>Descrição
+        <input name="description" value="{{expense.description}}" required>
+      </label>
+      <label>Fornecedor
+        <input name="supplier" value="{{expense.supplier or ''}}">
+      </label>
+      <label>Categoria
+        <select name="category_id" required>
+          {% for c in categories %}
+          <option value="{{c.id}}" {% if c.id==expense.category_id %}selected{% endif %}>{{c.name}}{{'' if c.active else ' (inativa)'}}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Valor
+        <input name="amount" inputmode="decimal" value="{{'%.2f'|format(expense.amount)|replace('.', ',')}}" required>
+      </label>
+      <label>Data
+        <input type="date" name="expense_date" value="{{expense.expense_date}}" required>
+      </label>
+      <label>Vencimento
+        <input type="date" name="due_date" value="{{expense.due_date or ''}}">
+      </label>
+      <label>Competência
+        <input type="month" name="competence" value="{{expense.competence or expense.expense_date[:7]}}">
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="pending" {% if expense.status=='pending' %}selected{% endif %}>Pendente</option>
+          <option value="paid" {% if expense.status=='paid' %}selected{% endif %}>Pago</option>
+        </select>
+      </label>
+      <label>Data pagamento
+        <input type="date" name="paid_date" value="{{expense.paid_date or ''}}">
+      </label>
+      <label>Forma de pagamento
+        <select name="payment_method">
+          <option value="">Não informada</option>
+          {% for m in methods %}
+          <option value="{{m.code}}" {% if m.code==expense.payment_method %}selected{% endif %}>{{m.name}}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="full">Observação
+        <textarea name="notes">{{expense.notes or ''}}</textarea>
+      </label>
+    </div>
+
+    <div class="actions expense-edit-actions">
+      <button class="btn gold">Salvar alterações</button>
+      <a class="btn ghost" href="/admin/financeiro/despesas/{{expense.id}}">Cancelar edição</a>
+    </div>
+  </form>
+</section>
+
+<div class="notice">Ao salvar, a Visão Geral, o Fluxo de Caixa e os demais relatórios passam a considerar automaticamente os dados corrigidos.</div>
+{% endblock %}
