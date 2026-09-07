@@ -1,0 +1,29 @@
+PH ESTÉTICA & DETAIL — ATUALIZAÇÃO V13.5
+Preços “A partir de”, avaliação e catálogo de adicionais
+
+1. ANTES DE ATUALIZAR
+- Entre em Admin → Configurações → Backups.
+- Baixe um backup atual do banco.
+- Se estiver usando Persistent Disk no Render, confirme que ele está ativo em /var/data.
+
+2. GITHUB / RENDER
+- Extraia o ZIP de atualização.
+- Envie os arquivos por cima dos atuais, mantendo as mesmas pastas.
+- Confirme o commit no GitHub.
+- No Render: Manual Deploy → Deploy latest commit.
+
+3. NÃO SUBSTITUA O BANCO
+- A atualização não precisa de um novo ph_estetica.db.
+- O sistema cria automaticamente as novas colunas e cadastra os novos adicionais sem apagar o histórico.
+
+4. O QUE MUDA
+- Serviços principais: preço fixo ou “A partir de”.
+- Adicionais: preço fixo, “A partir de” ou “Sob avaliação”.
+- Avisos de avaliação no fluxo do cliente.
+- Novos adicionais separados para carro e moto.
+- Valores sugeridos continuam editáveis em Admin → Serviços e preços.
+
+5. DEPOIS DO DEPLOY
+- Abra Admin → Serviços e preços e confira os valores.
+- Abra o agendamento como cliente e teste Carro e Moto.
+- Faça CTRL+F5 no PC ou feche/reabra a aba no celular se o navegador mantiver arquivos antigos em cache.

@@ -663,6 +663,15 @@ def brl(value):
     return f"R$ {float(value):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def price_display(value, mode="fixed"):
+    mode = (mode or "fixed").strip().lower()
+    if mode == "evaluation" or value is None:
+        return "Sob avaliação"
+    if mode == "from":
+        return f"A partir de {brl(value)}"
+    return brl(value)
+
+
 def fmt_date(value):
     if not value:
         return "—"
@@ -921,6 +930,7 @@ def init_db():
         name TEXT NOT NULL,
         description TEXT,
         price REAL NOT NULL,
+        price_mode TEXT NOT NULL DEFAULT 'from',
         duration_minutes INTEGER,
         active INTEGER NOT NULL DEFAULT 1,
         sort_order INTEGER NOT NULL DEFAULT 0
@@ -930,6 +940,7 @@ def init_db():
         name TEXT NOT NULL,
         description TEXT,
         price REAL,
+        price_mode TEXT NOT NULL DEFAULT 'from',
         category_code TEXT,
         active INTEGER NOT NULL DEFAULT 1
     );
@@ -1156,6 +1167,12 @@ def init_db():
             conn.execute("ALTER TABLE vehicles ADD COLUMN brand_catalog_id INTEGER")
         if "model_catalog_id" not in vehicle_cols:
             conn.execute("ALTER TABLE vehicles ADD COLUMN model_catalog_id INTEGER")
+        service_cols = {row[1] for row in conn.execute("PRAGMA table_info(services)").fetchall()}
+        if "price_mode" not in service_cols:
+            conn.execute("ALTER TABLE services ADD COLUMN price_mode TEXT NOT NULL DEFAULT 'from'")
+        extra_cols = {row[1] for row in conn.execute("PRAGMA table_info(service_extras)").fetchall()}
+        if "price_mode" not in extra_cols:
+            conn.execute("ALTER TABLE service_extras ADD COLUMN price_mode TEXT NOT NULL DEFAULT 'from'")
         for code, name in [("moto", "MOTO"), ("car_small", "CARRO PEQUENO/MÉDIO"), ("car_large", "CARRO GRANDE")]:
             conn.execute("INSERT OR IGNORE INTO vehicle_categories(code,name) VALUES (?,?)", (code, name))
             conn.execute("INSERT OR IGNORE INTO service_categories(code,name) VALUES (?,?)", (code, name))
@@ -1183,6 +1200,66 @@ def init_db():
         if setting(conn, "extras_scope_migrated_v3", "") != "1":
             conn.execute("UPDATE service_extras SET category_code='car' WHERE category_code IS NULL OR category_code='' ")
             conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('extras_scope_migrated_v3','1')")
+
+        # V13.5 — preços "a partir de", sob avaliação e catálogo de adicionais por veículo.
+        # Mantém o histórico dos adicionais antigos e só melhora os dados usados em novos agendamentos.
+        if setting(conn, "pricing_extras_v13_5", "") != "1":
+            conn.execute("UPDATE services SET price_mode='from' WHERE price_mode IS NULL OR price_mode='' OR price_mode NOT IN ('fixed','from')")
+
+            legacy_updates = [
+                ("Hidrorepelência dos vidros", "Aplicação de proteção repelente de água nos vidros. O valor pode variar conforme o estado dos vidros.", 30.0, "from", "Proteção de vidros"),
+                ("Remoção de chuva ácida dos vidros", "Tratamento para marcas minerais e manchas de água impregnadas nos vidros.", 40.0, "from", "Remoção de marcas de chuva"),
+                ("Revitalização de plásticos externos", "Recuperação do aspecto de plásticos externos ressecados ou esbranquiçados.", 30.0, "from", "Revitalização de plásticos"),
+                ("Remoção de pelos", "Remoção de pelos de animais no interior. O valor varia conforme a quantidade e dificuldade.", 30.0, "from", "Remoção de pelos de animais"),
+            ]
+            for new_name, desc, price, mode, old_name in legacy_updates:
+                row = conn.execute("SELECT id FROM service_extras WHERE LOWER(name)=LOWER(?) AND (category_code='car' OR category_code IN ('car_small','car_large')) ORDER BY id LIMIT 1", (old_name,)).fetchone()
+                if row:
+                    conn.execute("UPDATE service_extras SET name=?,description=?,price=?,price_mode=?,active=1 WHERE id=?", (new_name,desc,price,mode,row["id"]))
+
+            suggested_extras = [
+                # Carros — valor salvo é o valor inicial sugerido.
+                ("Remoção de chuva ácida dos vidros", "Tratamento para marcas minerais e manchas de água impregnadas nos vidros.", 40.0, "from", "car"),
+                ("Hidrorepelência dos vidros", "Proteção repelente de água para melhorar o escoamento e a visibilidade em chuva.", 30.0, "from", "car"),
+                ("Descontaminação da pintura", "Remoção de contaminantes aderidos que não saem na lavagem comum.", 40.0, "from", "car"),
+                ("Proteção da pintura / selante", "Aplicação de proteção e acabamento hidrorrepelente na pintura.", 30.0, "from", "car"),
+                ("Revitalização de plásticos externos", "Recuperação do aspecto de plásticos externos ressecados ou esbranquiçados.", 30.0, "from", "car"),
+                ("Detalhamento de rodas", "Limpeza criteriosa de rodas, cantos, pinças e áreas de difícil acesso.", 30.0, "from", "car"),
+                ("Limpeza de caixas de roda", "Remoção de barro, graxa e sujeira acumulada nas caixas de roda.", 20.0, "from", "car"),
+                ("Remoção de piche e resina", "Tratamento localizado para piche, resina e contaminantes aderidos à pintura.", 30.0, "from", "car"),
+                ("Remoção de manchas localizadas", "Tratamento de manchas específicas que exigem cuidado adicional.", 20.0, "from", "car"),
+                ("Higienização interna localizada", "Higienização de uma área específica, como banco, carpete, teto ou acabamento.", 30.0, "from", "car"),
+                ("Limpeza detalhada do porta-malas", "Limpeza aprofundada do porta-malas e seus acabamentos.", 20.0, "from", "car"),
+                ("Polimento de faróis", "Recuperação do acabamento de faróis opacos ou amarelados, conforme avaliação.", 60.0, "from", "car"),
+                ("Revitalização de borrachas externas", "Limpeza e acabamento de borrachas externas ressecadas.", 20.0, "from", "car"),
+                ("Remoção de pelos", "Remoção de pelos de animais no interior. O valor varia conforme quantidade e dificuldade.", 30.0, "from", "car"),
+                ("Adicional por sujeira excessiva", "Para veículos com barro pesado, areia, graxa, pelos ou sujeira muito acima do padrão da lavagem escolhida.", 20.0, "from", "car"),
+                # Motos
+                ("Lavagem técnica do motor", "Limpeza minuciosa do motor, aletas, parafusos e áreas de difícil acesso.", 30.0, "from", "moto"),
+                ("Desengraxe pesado do motor", "Tratamento para motor com óleo, graxa ou sujeira impregnada.", 40.0, "from", "moto"),
+                ("Limpeza detalhada da relação", "Limpeza criteriosa de corrente, coroa, pinhão e região da balança.", 20.0, "from", "moto"),
+                ("Limpeza + lubrificação da corrente", "Limpeza da relação seguida de lubrificação da corrente.", 25.0, "from", "moto"),
+                ("Restauração de escapamento", "Tratamento de manchas, oxidação e perda de acabamento do escapamento, conforme material e estado.", 40.0, "from", "moto"),
+                ("Polimento de escapamento", "Polimento de metais compatíveis para recuperar brilho e acabamento.", 30.0, "from", "moto"),
+                ("Revitalização de plásticos da moto", "Recuperação do aspecto de plásticos e acabamentos externos da moto.", 20.0, "from", "moto"),
+                ("Proteção / acabamento do motor", "Aplicação de acabamento e proteção compatível após a limpeza do motor.", 20.0, "from", "moto"),
+                ("Detalhamento de rodas", "Limpeza criteriosa de rodas, raios, cubos, pinças e regiões de difícil acesso.", 25.0, "from", "moto"),
+                ("Remoção de barro pesado", "Remoção de barro acumulado em motor, rodas, balança e áreas difíceis.", 20.0, "from", "moto"),
+                ("Descontaminação de carenagens", "Remoção de contaminações aderidas às carenagens que não saem na lavagem comum.", 30.0, "from", "moto"),
+                ("Hidrorepelência dos retrovisores", "Aplicação de repelente de água nos espelhos para melhorar a visibilidade em chuva.", 15.0, "from", "moto"),
+                ("Remoção de chuva ácida dos retrovisores", "Tratamento de marcas minerais e manchas de água nos espelhos dos retrovisores.", 20.0, "from", "moto"),
+                ("Adicional por sujeira excessiva", "Para motos com barro pesado, graxa ou sujeira muito acima do padrão da lavagem escolhida.", 20.0, "from", "moto"),
+            ]
+            for name, desc, price, mode, category_code in suggested_extras:
+                exists = conn.execute("SELECT id FROM service_extras WHERE LOWER(name)=LOWER(?) AND category_code=? LIMIT 1", (name, category_code)).fetchone()
+                if exists:
+                    conn.execute("UPDATE service_extras SET description=COALESCE(NULLIF(description,''),?),price=COALESCE(price,?),price_mode=COALESCE(NULLIF(price_mode,''),?),active=1 WHERE id=?", (desc,price,mode,exists["id"]))
+                else:
+                    conn.execute("INSERT INTO service_extras(name,description,price,price_mode,category_code,active) VALUES (?,?,?,?,?,1)", (name,desc,price,mode,category_code))
+
+            # Extras sem preço continuam disponíveis como "Sob avaliação".
+            conn.execute("UPDATE service_extras SET price_mode='evaluation' WHERE price IS NULL")
+            conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES ('pricing_extras_v13_5','1')")
         if conn.execute("SELECT COUNT(*) FROM condition_questions").fetchone()[0] == 0:
             questions = [
                 ("Pouco sujo", None, 1, 1),
@@ -1593,6 +1670,7 @@ def template_ctx(request: Request, **kwargs):
         "customer": current_customer(request),
         "status_labels": STATUS_LABELS,
         "brl": brl,
+        "price_display": price_display,
         "fmt_date": fmt_date,
         "fmt_datetime": fmt_datetime,
         "payment_label": payment_label,
@@ -1837,21 +1915,22 @@ async def create_booking(
 def confirmed(request: Request, code: str):
     with closing(db_conn()) as conn:
         a = conn.execute("""
-            SELECT a.*, c.name customer_name, c.phone, v.brand, v.model, v.category_code, s.name service_name
+            SELECT a.*, c.name customer_name, c.phone, v.brand, v.model, v.category_code, s.name service_name, s.price_mode service_price_mode
             FROM appointments a JOIN customers c ON c.id=a.customer_id JOIN vehicles v ON v.id=a.vehicle_id JOIN services s ON s.id=a.service_id
             WHERE a.code=?
         """, (code,)).fetchone()
         if not a:
             raise HTTPException(404)
         extras = conn.execute("""
-            SELECT e.name, ae.price_snapshot FROM appointment_extras ae JOIN service_extras e ON e.id=ae.extra_id WHERE ae.appointment_id=?
+            SELECT e.name, e.price_mode, ae.price_snapshot FROM appointment_extras ae JOIN service_extras e ON e.id=ae.extra_id WHERE ae.appointment_id=?
         """, (a["id"],)).fetchall()
+    variable_price = (a["service_price_mode"] == "from") or any((x["price_mode"] in ("from", "evaluation") or x["price_snapshot"] is None) for x in extras)
     message = (f"Olá! Fiz um agendamento pela {BUSINESS_NAME}.\n\nAgendamento: #{a['code']}\n"
                f"Veículo: {a['brand']} {a['model']}\nServiço: {a['service_name']}\nData: {fmt_date(a['appointment_date'])}\n"
                f"Horário: {a['appointment_time']}\nValor estimado: {brl(a['estimated_total'])}.")
     wa_number = current_whatsapp_number()
     wa_url = f"https://wa.me/{wa_number}?text={urllib.parse.quote(message)}"
-    return templates.TemplateResponse(request, "confirmed.html", template_ctx(request, a=a, extras=extras, wa_url=wa_url, calendar_url=f"/agendamento/{code}.ics"))
+    return templates.TemplateResponse(request, "confirmed.html", template_ctx(request, a=a, extras=extras, variable_price=variable_price, wa_url=wa_url, calendar_url=f"/agendamento/{code}.ics"))
 
 
 @app.post("/cancelar/{code}")
@@ -2494,33 +2573,36 @@ def admin_services(request: Request):
 
 
 @app.post("/admin/servicos/{service_id}")
-def admin_service_update(request: Request, service_id:int, name:str=Form(...), description:str=Form(""), price:float=Form(...), duration_minutes:str=Form(""), active:str=Form("0")):
+def admin_service_update(request: Request, service_id:int, name:str=Form(...), description:str=Form(""), price:float=Form(...), price_mode:str=Form("from"), duration_minutes:str=Form(""), active:str=Form("0")):
     if not request.session.get("is_admin"): raise HTTPException(401)
+    if price_mode not in {"fixed", "from"}: raise HTTPException(400, "Tipo de preço inválido.")
     dur=int(duration_minutes) if duration_minutes.strip().isdigit() else None
     with closing(db_conn()) as conn:
-        conn.execute("UPDATE services SET name=?,description=?,price=?,duration_minutes=?,active=? WHERE id=?",(name,description,price,dur,1 if active=="1" else 0,service_id)); conn.commit()
-    return RedirectResponse("/admin/servicos",303)
+        conn.execute("UPDATE services SET name=?,description=?,price=?,price_mode=?,duration_minutes=?,active=? WHERE id=?",(name,description,price,price_mode,dur,1 if active=="1" else 0,service_id)); conn.commit()
+    return RedirectResponse("/admin/servicos?saved=1",303)
 
 
 @app.post("/admin/extras/{extra_id}")
-def admin_extra_update(request: Request, extra_id:int, name:str=Form(...), price:str=Form(""), category_code:str=Form(""), active:str=Form("0")):
+def admin_extra_update(request: Request, extra_id:int, name:str=Form(...), description:str=Form(""), price:str=Form(""), price_mode:str=Form("from"), category_code:str=Form(""), active:str=Form("0")):
     if not request.session.get("is_admin"): raise HTTPException(401)
     if category_code not in {"all", "car", "moto", "car_small", "car_large"}: raise HTTPException(400, "Categoria inválida.")
-    p=float(price.replace(",",".")) if price.strip() else None
+    if price_mode not in {"fixed", "from", "evaluation"}: raise HTTPException(400, "Tipo de preço inválido.")
+    p=float(price.replace(",",".")) if price.strip() and price_mode != "evaluation" else None
     with closing(db_conn()) as conn:
-        conn.execute("UPDATE service_extras SET name=?,price=?,category_code=?,active=? WHERE id=?",(name.strip(),p,None if category_code=="all" else category_code,1 if active=="1" else 0,extra_id)); conn.commit()
+        conn.execute("UPDATE service_extras SET name=?,description=?,price=?,price_mode=?,category_code=?,active=? WHERE id=?",(name.strip(),description.strip(),p,price_mode,None if category_code=="all" else category_code,1 if active=="1" else 0,extra_id)); conn.commit()
     return RedirectResponse("/admin/servicos?saved=1",303)
 
 
 @app.post("/admin/servicos/adicional/novo")
-def admin_extra_create(request: Request, name:str=Form(...), price:str=Form(""), category_code:str=Form(...)):
+def admin_extra_create(request: Request, name:str=Form(...), description:str=Form(""), price:str=Form(""), price_mode:str=Form("from"), category_code:str=Form(...)):
     if not request.session.get("is_admin"): raise HTTPException(401)
     if category_code not in {"all", "car", "moto", "car_small", "car_large"}: raise HTTPException(400, "Categoria inválida.")
+    if price_mode not in {"fixed", "from", "evaluation"}: raise HTTPException(400, "Tipo de preço inválido.")
     if not name.strip(): raise HTTPException(400, "Informe o nome do adicional.")
-    p=float(price.replace(",",".")) if price.strip() else None
+    p=float(price.replace(",",".")) if price.strip() and price_mode != "evaluation" else None
     with closing(db_conn()) as conn:
-        conn.execute("INSERT INTO service_extras(name,price,category_code,active) VALUES (?,?,?,1)",
-                     (name.strip(),p,None if category_code=="all" else category_code)); conn.commit()
+        conn.execute("INSERT INTO service_extras(name,description,price,price_mode,category_code,active) VALUES (?,?,?,?,?,1)",
+                     (name.strip(),description.strip(),p,price_mode,None if category_code=="all" else category_code)); conn.commit()
     return RedirectResponse("/admin/servicos?extra_created=1",303)
 
 
