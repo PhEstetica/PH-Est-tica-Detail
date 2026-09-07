@@ -3951,6 +3951,89 @@ def finance_expense_create(request: Request,description:str=Form(...),category_i
     return RedirectResponse("/admin/financeiro/despesas?created=1",303)
 
 
+@app.get("/admin/financeiro/despesas/{expense_id}", response_class=HTMLResponse)
+def finance_expense_detail(request: Request, expense_id: int):
+    _admin_required(request)
+    with closing(db_conn()) as conn:
+        expense = conn.execute("""SELECT e.*, c.name category_name
+                                  FROM finance_expenses e
+                                  JOIN expense_categories c ON c.id=e.category_id
+                                  WHERE e.id=? AND e.cancelled_at IS NULL""", (expense_id,)).fetchone()
+        if not expense:
+            raise HTTPException(404, "Despesa não encontrada")
+    return templates.TemplateResponse(
+        request,
+        "admin_finance_expense_detail.html",
+        _finance_ctx(request, expense=expense),
+    )
+
+
+@app.get("/admin/financeiro/despesas/{expense_id}/editar", response_class=HTMLResponse)
+def finance_expense_edit_page(request: Request, expense_id: int):
+    _admin_required(request)
+    with closing(db_conn()) as conn:
+        expense = conn.execute("""SELECT e.*, c.name category_name
+                                  FROM finance_expenses e
+                                  JOIN expense_categories c ON c.id=e.category_id
+                                  WHERE e.id=? AND e.cancelled_at IS NULL""", (expense_id,)).fetchone()
+        if not expense:
+            raise HTTPException(404, "Despesa não encontrada")
+        categories = conn.execute("SELECT * FROM expense_categories ORDER BY sort_order,name").fetchall()
+        methods = get_payment_methods(conn, active_only=False)
+    return templates.TemplateResponse(
+        request,
+        "admin_finance_expense_edit.html",
+        _finance_ctx(request, expense=expense, categories=categories, methods=methods),
+    )
+
+
+@app.post("/admin/financeiro/despesas/{expense_id}/editar")
+def finance_expense_edit_save(
+    request: Request,
+    expense_id: int,
+    description: str = Form(...),
+    category_id: int = Form(...),
+    amount: str = Form(...),
+    expense_date: str = Form(...),
+    due_date: str = Form(""),
+    paid_date: str = Form(""),
+    competence: str = Form(""),
+    payment_method: str = Form(""),
+    status: str = Form("pending"),
+    supplier: str = Form(""),
+    notes: str = Form(""),
+):
+    _admin_required(request)
+    if status not in {"pending", "paid"}:
+        raise HTTPException(400, "Status inválido")
+    value = _money(amount)
+    if value <= 0:
+        raise HTTPException(400, "Informe um valor válido")
+    if status == "paid":
+        paid_date = paid_date or expense_date
+    else:
+        paid_date = ""
+    final_competence = (competence or expense_date[:7]).strip()
+    with closing(db_conn()) as conn:
+        current = conn.execute("SELECT * FROM finance_expenses WHERE id=? AND cancelled_at IS NULL", (expense_id,)).fetchone()
+        if not current:
+            raise HTTPException(404, "Despesa não encontrada")
+        if not conn.execute("SELECT 1 FROM expense_categories WHERE id=?", (category_id,)).fetchone():
+            raise HTTPException(400, "Categoria inválida")
+        conn.execute(
+            """UPDATE finance_expenses
+               SET description=?, category_id=?, amount=?, expense_date=?, due_date=?, paid_date=?,
+                   competence=?, payment_method=?, status=?, supplier=?, notes=?
+               WHERE id=?""",
+            (
+                description.strip(), category_id, value, expense_date, due_date or None, paid_date or None,
+                final_competence, payment_method, status, supplier.strip(), notes.strip(), expense_id,
+            ),
+        )
+        conn.commit()
+    return RedirectResponse(f"/admin/financeiro/despesas/{expense_id}?updated=1", 303)
+
+
 @app.post("/admin/financeiro/despesas/{expense_id}/pagar")
 def finance_expense_pay(request: Request,expense_id:int,paid_date:str=Form(""),payment_method:str=Form("")):
     _admin_required(request)

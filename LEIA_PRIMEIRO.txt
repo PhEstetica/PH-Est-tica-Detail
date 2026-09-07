@@ -1,35 +1,22 @@
-PH ESTÉTICA & DETAIL — V15
-Premium + Efeitos + Usuários e Permissões
+PH ESTÉTICA & DETAIL — V15.1
+FINANCEIRO: EDIÇÃO E DETALHES DE DESPESAS
 
-O QUE A V15 ADICIONA
-- Nova logo premium PH incluída no projeto.
-- Nova imagem principal com carro em ambiente PH, incluída no projeto.
-- Remove a logo flutuante que ficava sobre a foto principal.
-- Efeitos suaves de surgimento ao rolar a página em desktop e celular.
-- Cabeçalho e detalhes visuais refinados.
-- Logo de acesso/cadastro configurável separadamente.
-- Login administrativo agora usa usuários salvos no banco.
-- Usuário mestre com acesso total.
-- Gerentes com acesso operacional completo e criação/edição de funcionários.
-- Funcionários com permissões por módulos marcadas por caixas de seleção.
-- Sem limite de quantidade de usuários administrativos.
-- Tela Meu acesso para alterar usuário e senha.
-
-PRIMEIRO ACESSO APÓS ATUALIZAR
-O sistema cria automaticamente o usuário mestre usando as credenciais que você já usava:
-- PH_ADMIN_USER / PH_ADMIN_PASSWORD do Render, se configuradas;
-- caso não existam, o padrão anterior admin / admin123.
-
-Depois entre em Admin -> Meu acesso para trocar usuário e senha.
+O que mudou:
+- tabela de despesas separa Descrição e Fornecedor;
+- colunas: Data, Descrição, Fornecedor, Categoria, Competência, Valor, Status e Ações;
+- botão Editar em cada lançamento;
+- botão Ver para abrir todos os detalhes da despesa;
+- edição de descrição, fornecedor, categoria, valor, data, vencimento, competência, status, data de pagamento, forma de pagamento e observações;
+- relatórios financeiros passam a refletir automaticamente o valor/dados editados;
+- função Marcar pago e Cancelar continuam disponíveis;
+- layout responsivo para PC e celular.
 
 ATUALIZAÇÃO NO GITHUB
-1. Faça backup do banco pelo painel antes de atualizar.
+1. Faça um backup do banco .db pelo Admin antes de atualizar.
 2. Extraia o ZIP de atualização.
-3. No GitHub, envie app.py e as pastas templates e static mantendo os caminhos.
-4. Confirme as alterações.
-5. No Render: Manual Deploy -> Deploy latest commit.
-6. Quando ficar Live, use CTRL+F5 no computador ou feche/reabra a página no celular.
+3. Envie app.py e as pastas templates/ e static/ mantendo as pastas.
+4. Confirme as alterações no GitHub.
+5. Render -> Manual Deploy -> Deploy latest commit.
+6. Depois que ficar Live, use CTRL+F5 no PC ou feche e reabra a página no celular.
 
-BANCO DE DADOS
-O pacote de atualização NÃO contém ph_estetica.db.
-A migração cria somente as novas tabelas de usuários/controle de acesso dentro do banco já existente.
+O pacote de atualização não contém ph_estetica.db.
