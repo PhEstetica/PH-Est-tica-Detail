@@ -13,6 +13,7 @@
   <a class="brand" href="/"><img src="{{brand_logo_url}}" alt="PH ESTÉTICA & DETAIL"><span>PH ESTÉTICA & DETAIL</span></a>
   <nav class="desktop-nav">
     <a href="/">Início</a><a href="/agendar">Agendar</a><a href="/garagem">Minha Garagem</a><a href="/acompanhar">Acompanhar</a>
+    {% if instagram_url %}<a href="{{ instagram_url }}" target="_blank" rel="noopener">Instagram</a>{% endif %}
     {% if customer %}<a href="/historico">Histórico</a><a href="/notificacoes">Avisos</a><a href="/logout">Sair</a>{% else %}<a href="/login">Entrar</a>{% endif %}
   </nav>
 </header>

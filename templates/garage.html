@@ -2,6 +2,11 @@
 {% block content %}
 <section class="shell section">
   <div class="section-head"><span>MINHA GARAGEM</span><h1>Seus veículos</h1></div>
+  {% if request.query_params.get('linked') %}
+  <div class="notice gold-notice linked-customer-notice"><b>Cadastro anterior encontrado.</b> Identificamos seu WhatsApp e vinculamos este acesso ao cadastro que já existia na PH. Seus veículos e atendimentos anteriores continuam no mesmo histórico.</div>
+  {% elif request.query_params.get('welcome') %}
+  <div class="notice gold-notice"><b>Cadastro criado.</b> Seu acesso à Minha Garagem está pronto.</div>
+  {% endif %}
   <div class="grid-3">
     {% for v in vehicles %}
     <article class="card vehicle-card">

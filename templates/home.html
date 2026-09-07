@@ -89,10 +89,23 @@
 
 {% if promos %}<section class="shell section"><div class="section-head"><span>CAMPANHAS</span><h2>Novidades da PH</h2></div><div class="grid-3">{% for p in promos %}<article class="card"><h3>{{p.title}}</h3><p>{{p.description}}</p></article>{% endfor %}</div></section>{% endif %}
 
+{% if instagram_url %}
+<section class="shell section instagram-follow-section">
+  <article class="card instagram-follow-card">
+    <div class="instagram-follow-copy">
+      <span class="instagram-kicker">INSTAGRAM</span>
+      <h2>Acompanhe os resultados da PH</h2>
+      <p>Veja trabalhos, antes e depois, novidades e acompanhe a PH ESTÉTICA & DETAIL também pelo Instagram.</p>
+    </div>
+    <a class="btn instagram-btn" href="{{ instagram_url }}" target="_blank" rel="noopener">Seguir no Instagram</a>
+  </article>
+</section>
+{% endif %}
+
 <section class="shell section" id="depoimentos">
   <div class="section-head"><span>AVALIAÇÕES</span><h2>Experiências de quem já cuidou do veículo aqui.</h2><p>Somente avaliações que o cliente autorizou e que estão visíveis no painel aparecem nesta área.</p></div>
   {% if reviews %}<div class="testimonial-grid">{% for r in reviews %}<article class="card testimonial-card"><div class="stars">{% for i in range(r.rating) %}★{% endfor %}{% for i in range(5-r.rating) %}<span>★</span>{% endfor %}</div><p>“{{ r.comment }}”</p><div class="review-meta"><strong>{{ first_name(r.customer_name) }}</strong><span>{{ r.brand }} {{ r.model }}</span></div></article>{% endfor %}</div>{% else %}<div class="notice">Ainda não existem avaliações publicadas.</div>{% endif %}
 </section>
 
-<section class="shell section cta-band"><div class="card cta-card"><div><div class="eyebrow">PH ESTÉTICA & DETAIL</div><h2>Seu próximo cuidado pode ser agendado agora.</h2><p>Escolha carro ou moto e reserve um horário disponível.</p></div><div class="actions"><a class="btn gold" href="/agendar">AGENDAR AGORA</a><a class="btn ghost" target="_blank" href="https://wa.me/{{whatsapp_number}}">WHATSAPP</a></div></div></section>
+<section class="shell section cta-band"><div class="card cta-card"><div><div class="eyebrow">PH ESTÉTICA & DETAIL</div><h2>Seu próximo cuidado pode ser agendado agora.</h2><p>Escolha carro ou moto e reserve um horário disponível.</p></div><div class="actions"><a class="btn gold" href="/agendar">AGENDAR AGORA</a><a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/{{whatsapp_number}}">WHATSAPP</a>{% if instagram_url %}<a class="btn ghost" target="_blank" rel="noopener" href="{{ instagram_url }}">INSTAGRAM</a>{% endif %}</div></div></section>
 {% endblock %}
