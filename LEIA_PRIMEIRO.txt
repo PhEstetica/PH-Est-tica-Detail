@@ -1,0 +1,19 @@
+PH ESTETICA - V13.5.2 GITHUB FACIL
+
+IMPORTANTE: NAO envie os arquivos .html/.js soltos.
+
+No GitHub, na raiz do repositorio:
+1. Add file -> Upload files.
+2. Nesta pasta extraida, arraste SOMENTE estes itens:
+   - app.py
+   - pasta templates
+   - pasta static
+3. O GitHub deve mostrar caminhos como:
+   templates/admin_settings.html
+   static/style.css
+4. Se aparecer admin_settings.html ou style.css sem a pasta na frente, NAO confirme.
+5. Confirme as alteracoes e depois faca Deploy latest commit no Render.
+
+A pasta templates desta atualizacao contem somente os templates que precisam ser substituidos.
+A pasta static contem somente os arquivos estaticos que precisam ser substituidos.
+O banco de dados nao faz parte desta atualizacao.
