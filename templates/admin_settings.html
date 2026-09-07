@@ -3,6 +3,8 @@
 <div class="admin-head settings-head"><div><span>CONFIGURAÇÕES DA EMPRESA</span><h1>Central de ajustes</h1><p>Altere textos, WhatsApp, políticas, identidade, imagens e backups sem mexer no código.</p></div></div>
 
 {% if request.query_params.get('saved') %}<div class="notice gold-notice">Configurações salvas.</div>{% endif %}
+{% if request.query_params.get('logo') or request.query_params.get('logo_default') %}<div class="notice gold-notice">Logo principal atualizada.</div>{% endif %}
+{% if request.query_params.get('auth_logo') or request.query_params.get('auth_logo_default') %}<div class="notice gold-notice">Logo da área de acesso/cadastro atualizada.</div>{% endif %}
 {% if request.query_params.get('image') %}<div class="notice gold-notice">Imagem da página inicial atualizada.</div>{% endif %}
 {% if request.query_params.get('image_reset') %}<div class="notice gold-notice">Imagem ilustrativa padrão restaurada.</div>{% endif %}
 {% if request.query_params.get('wa_messages') %}<div class="notice gold-notice">Mensagens do WhatsApp salvas.</div>{% endif %}
@@ -15,8 +17,8 @@
     <a class="settings-tab" href="#identidade" data-settings-tab="identidade">Identidade e contato</a>
     <a class="settings-tab" href="#mensagens-whatsapp" data-settings-tab="mensagens-whatsapp">Mensagens do WhatsApp</a>
     <a class="settings-tab" href="#imagens-home" data-settings-tab="imagens-home">Imagens da página inicial</a>
-    <a class="settings-tab" href="#logo" data-settings-tab="logo">Logo do cabeçalho</a>
-    <a class="settings-tab" href="#backups" data-settings-tab="backups">Backups</a>
+    <a class="settings-tab" href="#logo" data-settings-tab="logo">Logos</a>
+    {% if admin_can('backups') %}<a class="settings-tab" href="#backups" data-settings-tab="backups">Backups</a>{% endif %}
   </nav>
 
   <section class="admin-section settings-panel" id="identidade" data-settings-panel="identidade">
@@ -64,12 +66,25 @@
   </section>
 
   <section class="admin-section settings-panel" id="logo" data-settings-panel="logo">
-    <div class="settings-panel-head"><div><span>MARCA</span><h2>Logo usada no cabeçalho</h2><p>Mantenha a identidade atual ou envie uma nova logo em PNG, JPG ou WEBP.</p></div></div>
-    <div class="logo-settings-preview"><img src="{{brand_logo_url}}" alt="Logo atual"></div>
-    <form class="inline-form" method="post" action="/admin/configuracoes/logo" enctype="multipart/form-data"><label>Nova logo<input type="file" name="logo" accept="image/*" required></label><button class="btn gold" type="submit">Enviar logo</button></form>
+    <div class="settings-panel-head"><div><span>MARCA</span><h2>Logos do sistema</h2><p>Escolha separadamente a logo do site e a logo exibida nas telas de acesso/cadastro.</p></div></div>
+    <div class="admin-tab-group" data-admin-tab-group="config-logos" data-default-tab="site">
+      <nav class="admin-tabs-nav subtabs two"><button type="button" class="admin-tab-btn" data-admin-tab="site">Logo do site</button><button type="button" class="admin-tab-btn" data-admin-tab="cadastro">Logo de acesso/cadastro</button></nav>
+      <div class="admin-tab-panel" data-admin-tab-panel="site">
+        <div class="logo-settings-preview"><img src="{{brand_logo_url}}" alt="Logo atual do site"></div>
+        <p class="muted">Usada no cabeçalho, favicon e identidade geral do site.</p>
+        <form class="inline-form" method="post" action="/admin/configuracoes/logo" enctype="multipart/form-data"><label>Nova logo<input type="file" name="logo" accept="image/*" required></label><button class="btn gold" type="submit">Enviar logo</button></form>
+        <form method="post" action="/admin/configuracoes/logo/restaurar"><button class="btn ghost compact" type="submit">Usar logo premium da V15</button></form>
+      </div>
+      <div class="admin-tab-panel" data-admin-tab-panel="cadastro">
+        <div class="logo-settings-preview"><img src="{{auth_logo_url}}" alt="Logo atual de acesso e cadastro"></div>
+        <p class="muted">Aparece na área do cliente e na tela de acesso administrativo. Se não houver uma logo própria, o sistema usa a logo principal.</p>
+        <form class="inline-form" method="post" action="/admin/configuracoes/logo-cadastro" enctype="multipart/form-data"><label>Nova logo para acesso/cadastro<input type="file" name="logo" accept="image/*" required></label><button class="btn gold" type="submit">Enviar logo</button></form>
+        <form method="post" action="/admin/configuracoes/logo-cadastro/restaurar"><button class="btn ghost compact" type="submit">Usar a mesma logo do site</button></form>
+      </div>
+    </div>
   </section>
 
-  <section class="admin-section settings-panel" id="backups" data-settings-panel="backups">
+  {% if admin_can('backups') %}<section class="admin-section settings-panel" id="backups" data-settings-panel="backups">
     <div class="settings-panel-head"><div><span>SEGURANÇA DOS DADOS</span><h2>Backups</h2><p>Download, restauração e arquivos do servidor separados.</p></div></div>
     <div class="storage-status {% if storage_info.persistent %}is-persistent{% else %}is-temporary{% endif %}"><div class="storage-status-icon">{% if storage_info.persistent %}✓{% else %}!{% endif %}</div><div><b>{% if storage_info.persistent %}Persistent Disk ativo{% else %}Armazenamento temporário{% endif %}</b><p>{% if storage_info.persistent %}Os dados estão sendo gravados em <code>{{storage_info.data_dir}}</code>.{% else %}Os dados estão em <code>{{storage_info.data_dir}}</code> e podem ser perdidos em reinícios/deploys.{% endif %}</p><small>Banco: <code>{{storage_info.db_path}}</code> · Fotos: <code>{{storage_info.upload_dir}}</code></small></div></div>
     <div class="admin-tab-group" data-admin-tab-group="config-backups" data-default-tab="baixar">
@@ -78,7 +93,7 @@
       <div class="admin-tab-panel" data-admin-tab-panel="restaurar"><article class="backup-action-card restore-card"><span class="backup-kicker">RESTAURAR</span><h3>Recuperar dados de um backup</h3><p>Selecione um arquivo <b>.db</b> ou <b>.zip</b>. O sistema cria uma cópia de segurança do banco atual antes de substituir os dados.</p><form class="form-stack restore-backup-form" method="post" action="/admin/backup/restaurar" enctype="multipart/form-data" onsubmit="return confirm('Restaurar este backup? O banco atual será substituído, mas uma cópia de segurança será criada automaticamente.');"><label>Arquivo de backup<input type="file" name="backup" accept=".db,.zip,application/x-sqlite3,application/zip" required></label><button class="btn gold" type="submit">Restaurar backup agora</button></form><div class="notice"><b>Atenção:</b> use a restauração somente com um backup da PH ESTÉTICA.</div></article></div>
       <div class="admin-tab-panel" data-admin-tab-panel="servidor"><div class="stack">{% for b in backups %}<div class="mini-card backup-file-row"><div><b>{{b.name}}</b></div><a class="btn ghost compact" href="/admin/backup/arquivo/{{b.name}}" download>Baixar</a></div>{% else %}<div class="notice">Ainda não existe backup salvo no servidor.</div>{% endfor %}</div></div>
     </div>
-  </section>
+  </section>{% endif %}
 </div>
 {% endblock %}
 {% block scripts %}<script src="/static/admin_settings_tabs.js"></script>{% endblock %}

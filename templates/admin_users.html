@@ -1,0 +1,80 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head"><div><span>USUÁRIOS E ACESSOS</span><h1>Equipe do painel</h1><p>Crie quantos acessos precisar e escolha exatamente o que cada funcionário pode visualizar ou alterar.</p></div></div>
+
+{% if request.query_params.get('created') %}<div class="notice gold-notice">Novo acesso criado.</div>{% endif %}
+{% if request.query_params.get('saved') %}<div class="notice gold-notice">Acesso atualizado.</div>{% endif %}
+{% if request.query_params.get('error') %}<div class="notice error">{% set e=request.query_params.get('error') %}{% if e=='usuario_existe' %}Já existe um usuário com esse login.{% elif e=='senha_curta' %}A senha precisa ter pelo menos 6 caracteres.{% else %}Confira usuário, senha e campos obrigatórios.{% endif %}</div>{% endif %}
+
+<section class="admin-section users-access-intro">
+  <div class="access-level-grid">
+    <article><b>Mestre</b><p>Acesso total e permanente. Pode criar gerentes e funcionários e definir qualquer permissão.</p></article>
+    <article><b>Gerente</b><p>Acesso operacional completo e pode criar/editar acessos de funcionários. Não altera o usuário mestre.</p></article>
+    <article><b>Funcionário</b><p>Enxerga somente os módulos marcados por você. As permissões podem ser alteradas a qualquer momento.</p></article>
+  </div>
+  <div class="notice"><b>Sem limite de usuários.</b> Você pode criar quantos acessos forem necessários para sua equipe.</div>
+</section>
+
+<section class="admin-section">
+  <div class="admin-section-title"><div><span>NOVO ACESSO</span><h2>Criar usuário</h2></div></div>
+  <form class="form-stack admin-user-form" method="post" action="/admin/usuarios/novo" data-permission-form>
+    <div class="form-grid">
+      <label>Nome do funcionário<input name="display_name" placeholder="Ex.: João" required></label>
+      <label>Usuário para entrar<input name="username" minlength="3" placeholder="Ex.: joao" required></label>
+      <label>Senha inicial<input name="password" type="password" minlength="6" autocomplete="new-password" required></label>
+      {% if admin_user.role=='master' %}
+      <label>Nível de acesso<select name="role" data-role-select><option value="staff">Funcionário</option><option value="manager">Gerente</option></select><small>Gerente recebe acesso operacional completo automaticamente.</small></label>
+      {% else %}<input type="hidden" name="role" value="staff">{% endif %}
+    </div>
+    <div class="permission-picker" data-permission-picker>
+      <div class="permission-picker-head"><div><b>Permissões do funcionário</b><small>Marque somente o que esse usuário poderá acessar.</small></div><div class="permission-actions"><button type="button" class="btn ghost compact" data-perm-all>Marcar tudo</button><button type="button" class="btn ghost compact" data-perm-none>Limpar</button></div></div>
+      <div class="permission-grid">
+        {% for key,label,description in permission_defs %}
+        <label class="permission-item"><input type="checkbox" name="perm_{{key}}" value="1"><span><b>{{label}}</b><small>{{description}}</small></span></label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="actions"><button class="btn gold" type="submit">Criar acesso</button></div>
+  </form>
+</section>
+
+<section class="admin-section">
+  <div class="admin-section-title"><div><span>ACESSOS CADASTRADOS</span><h2>Usuários da equipe</h2></div></div>
+  <div class="admin-users-list">
+    {% for u in users %}
+      {% set perms=admin_permissions_from_value(u.permissions_json) %}
+      {% set can_edit = (admin_user.role=='master' and u.role!='master') or (admin_user.role=='manager' and u.role=='staff') %}
+      <article class="admin-user-card {% if not u.active %}is-inactive{% endif %}">
+        <div class="admin-user-card-head">
+          <div><span class="role-chip role-{{u.role}}">{% if u.role=='master' %}MESTRE{% elif u.role=='manager' %}GERENTE{% else %}FUNCIONÁRIO{% endif %}</span><h3>{{u.display_name}}</h3><p>@{{u.username}} · {% if u.active %}Ativo{% else %}Desativado{% endif %}</p></div>
+          {% if u.id==admin_user.id %}<span class="self-chip">SEU ACESSO</span>{% endif %}
+        </div>
+        {% if can_edit %}
+        <details class="user-edit-details"><summary>Editar acesso</summary>
+          <form class="form-stack admin-user-form" method="post" action="/admin/usuarios/{{u.id}}" data-permission-form>
+            <div class="form-grid">
+              <label>Nome exibido<input name="display_name" value="{{u.display_name}}" required></label>
+              <label>Usuário<input name="username" value="{{u.username}}" minlength="3" required></label>
+              {% if admin_user.role=='master' and u.role!='master' %}<label>Nível<select name="role" data-role-select><option value="staff" {% if u.role=='staff' %}selected{% endif %}>Funcionário</option><option value="manager" {% if u.role=='manager' %}selected{% endif %}>Gerente</option></select></label>{% else %}<input type="hidden" name="role" value="{{u.role}}">{% endif %}
+              <label>Nova senha (opcional)<input type="password" name="new_password" minlength="6" autocomplete="new-password"><small>Deixe vazio para não alterar.</small></label>
+            </div>
+            {% if u.role!='master' %}<label class="toggle-row"><input type="checkbox" name="active" value="1" {% if u.active %}checked{% endif %}><span>Usuário ativo</span></label>{% else %}<input type="hidden" name="active" value="1">{% endif %}
+            <div class="permission-picker {% if u.role in ['master','manager'] %}manager-permissions{% endif %}" data-permission-picker>
+              <div class="permission-picker-head"><div><b>Permissões</b><small>{% if u.role in ['master','manager'] %}Este nível possui todos os módulos operacionais.{% else %}Escolha o que esse funcionário pode acessar.{% endif %}</small></div>{% if u.role=='staff' %}<div class="permission-actions"><button type="button" class="btn ghost compact" data-perm-all>Marcar tudo</button><button type="button" class="btn ghost compact" data-perm-none>Limpar</button></div>{% endif %}</div>
+              <div class="permission-grid">
+                {% for key,label,description in permission_defs %}
+                <label class="permission-item"><input type="checkbox" name="perm_{{key}}" value="1" {% if u.role in ['master','manager'] or key in perms %}checked{% endif %} {% if u.role in ['master','manager'] %}disabled{% endif %}><span><b>{{label}}</b><small>{{description}}</small></span></label>
+                {% if u.role in ['master','manager'] %}<input type="hidden" name="perm_{{key}}" value="1">{% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            <div class="actions"><button class="btn gold" type="submit">Salvar usuário</button></div>
+          </form>
+        </details>
+        {% else %}<div class="notice">Este acesso só pode ser alterado pelo usuário mestre.</div>{% endif %}
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/admin_users.js"></script>{% endblock %}

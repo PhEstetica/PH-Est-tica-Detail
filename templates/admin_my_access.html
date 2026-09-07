@@ -1,0 +1,32 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="admin-head"><div><span>SEGURANÇA</span><h1>Meu acesso</h1><p>Altere seu nome de usuário e sua senha do painel com segurança.</p></div></div>
+{% if request.query_params.get('saved') %}<div class="notice gold-notice">Dados de acesso atualizados com sucesso.</div>{% endif %}
+{% if request.query_params.get('error') %}
+<div class="notice error">
+  {% set e=request.query_params.get('error') %}
+  {% if e=='senha_atual' %}A senha atual está incorreta.
+  {% elif e=='usuario_curto' %}O usuário precisa ter pelo menos 3 caracteres.
+  {% elif e=='senha_curta' %}A nova senha precisa ter pelo menos 6 caracteres.
+  {% elif e=='confirmacao' %}A confirmação da nova senha não confere.
+  {% elif e=='usuario_existe' %}Esse nome de usuário já está sendo usado.
+  {% else %}Não foi possível salvar as alterações.{% endif %}
+</div>
+{% endif %}
+<section class="admin-section access-self-card">
+  <div class="access-role-banner">
+    <div><span>PERFIL ATUAL</span><strong>{{ user.display_name }}</strong><small>@{{ user.username }}</small></div>
+    <b class="role-chip role-{{user.role}}">{% if user.role=='master' %}MESTRE{% elif user.role=='manager' %}GERENTE{% else %}FUNCIONÁRIO{% endif %}</b>
+  </div>
+  <form class="form-stack" method="post" action="/admin/meu-acesso">
+    <div class="form-grid">
+      <label>Nome exibido<input name="display_name" value="{{user.display_name}}" required></label>
+      <label>Usuário de login<input name="username" value="{{user.username}}" minlength="3" required></label>
+      <label class="full">Senha atual <input type="password" name="current_password" autocomplete="current-password" required><small>Obrigatória para confirmar qualquer alteração.</small></label>
+      <label>Nova senha <input type="password" name="new_password" autocomplete="new-password" minlength="6"><small>Deixe em branco para manter a senha atual.</small></label>
+      <label>Confirmar nova senha <input type="password" name="confirm_password" autocomplete="new-password"></label>
+    </div>
+    <div class="actions"><button class="btn gold" type="submit">Salvar meu acesso</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -19,7 +19,27 @@
       <button class="admin-menu-close" type="button" aria-label="Fechar menu" data-admin-menu-close>×</button>
     </div>
     <nav>
-      <a href="/admin">Dashboard</a><a href="/admin/hoje">Hoje</a><a href="/admin/agendamentos">Agendamentos</a><a href="/admin/agendamentos/registrar">Registrar realizado</a><a href="/admin/kanban">Kanban</a><a href="/admin/servicos">Serviços e preços</a><a href="/admin/perguntas-veiculo">Perguntas do veículo</a><a href="/admin/catalogo-veiculos">Marcas e modelos</a><a href="/admin/agenda">Configurar agenda</a><a href="/admin/clientes">Clientes</a><a href="/admin/financeiro">Financeiro</a><a href="/admin/avaliacoes">Avaliações</a><a href="/admin/galeria">Galeria</a><a href="/admin/lembretes">Lembretes</a><a href="/admin/boxes">Boxes</a><a href="/admin/promocoes">Promoções</a><a href="/admin/configuracoes">Configurações</a><a href="/tv" target="_blank">Modo TV</a><a href="/admin/logout">Sair</a>
+      {% if admin_can('dashboard') %}<a href="/admin">Dashboard</a>{% endif %}
+      {% if admin_can('today') %}<a href="/admin/hoje">Hoje</a>{% endif %}
+      {% if admin_can('appointments') %}<a href="/admin/agendamentos">Agendamentos</a><a href="/admin/agendamentos/registrar">Registrar realizado</a>{% endif %}
+      {% if admin_can('kanban') %}<a href="/admin/kanban">Kanban</a>{% endif %}
+      {% if admin_can('services') %}<a href="/admin/servicos">Serviços e preços</a>{% endif %}
+      {% if admin_can('vehicle_questions') %}<a href="/admin/perguntas-veiculo">Perguntas do veículo</a>{% endif %}
+      {% if admin_can('vehicle_catalog') %}<a href="/admin/catalogo-veiculos">Marcas e modelos</a>{% endif %}
+      {% if admin_can('schedule') %}<a href="/admin/agenda">Configurar agenda</a>{% endif %}
+      {% if admin_can('customers') %}<a href="/admin/clientes">Clientes</a>{% endif %}
+      {% if admin_can('finance') %}<a href="/admin/financeiro">Financeiro</a>{% endif %}
+      {% if admin_can('reviews') %}<a href="/admin/avaliacoes">Avaliações</a>{% endif %}
+      {% if admin_can('gallery') %}<a href="/admin/galeria">Galeria</a>{% endif %}
+      {% if admin_can('reminders') %}<a href="/admin/lembretes">Lembretes</a>{% endif %}
+      {% if admin_can('boxes') %}<a href="/admin/boxes">Boxes</a>{% endif %}
+      {% if admin_can('promotions') %}<a href="/admin/promocoes">Promoções</a>{% endif %}
+      {% if admin_can('settings') %}<a href="/admin/configuracoes">Configurações</a>{% endif %}
+      {% if admin_user and admin_user.role in ['master','manager'] %}<a href="/admin/usuarios">Usuários e acessos</a>{% endif %}
+      <a href="/admin/meu-acesso">Meu acesso</a>
+      <a href="/tv" target="_blank">Modo TV</a>
+      <div class="admin-user-summary">{% if admin_user %}<b>{{admin_user.display_name}}</b><small>{% if admin_user.role=='master' %}Usuário mestre{% elif admin_user.role=='manager' %}Gerente{% else %}Funcionário{% endif %} · {{admin_user.username}}</small>{% endif %}</div>
+      <a href="/admin/logout">Sair</a>
     </nav>
   </aside>
   <main class="admin-main">{% block content %}{% endblock %}</main>

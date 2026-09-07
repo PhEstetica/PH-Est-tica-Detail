@@ -1,1 +1,6 @@
-{% extends 'base.html' %}{% block content %}<section class="shell narrow section"><div class="section-head"><span>PAINEL ADMINISTRATIVO</span><h1>Acesso da equipe</h1></div><form method="post" class="card form-stack">{% if error %}<div class="notice error">{{error}}</div>{% endif %}<label>Usuário<input name="username" required></label><label>Senha<input type="password" name="password" required></label><button class="btn gold">Entrar</button></form></section>{% endblock %}
+{% extends 'base.html' %}{% block content %}
+<section class="shell narrow section admin-login-v15">
+  <div class="admin-login-brand"><img src="{{auth_logo_url}}" alt="PH Estética & Detail"><div><span>PAINEL ADMINISTRATIVO</span><h1>Acesso da equipe</h1><p>Entre com o usuário e senha cadastrados para sua função.</p></div></div>
+  <form method="post" class="card form-stack admin-login-card">{% if error %}<div class="notice error">{{error}}</div>{% endif %}<label>Usuário<input name="username" autocomplete="username" required></label><label>Senha<input type="password" name="password" autocomplete="current-password" required></label><button class="btn gold">Entrar</button></form>
+</section>
+{% endblock %}
